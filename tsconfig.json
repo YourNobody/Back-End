@@ -6,9 +6,11 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2017",
+    "target": "es2020",
     "sourceMap": true,
     "outDir": "./dist",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
     "baseUrl": "./",
     "incremental": true
   }
