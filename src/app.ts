@@ -1,13 +1,22 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application } from 'express';
+import mongoose from 'mongoose';
+import { homeRoutes } from './routes/home';
+import { options } from './constants/options';
 
 const app: Application = express();
 
-app.get('/', (req: Request, res: Response) => {
-  res.json({
-    message: "Server is loaded!"
-  })
-});
+app.use(express.json());
 
-app.listen(4000, () => {
-  console.log('Server is loaded! Start working...')
-})
+app.use('/', homeRoutes);
+
+void async function() {
+  try {
+    await mongoose.connect(options.MONGODB_URI, {
+    })
+    app.listen(options.PORT, () => {
+      console.log('Server is running on port ' + options.PORT)
+    })
+  } catch (error) {
+    console.error(error)
+  }
+}()

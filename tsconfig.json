@@ -10,7 +10,9 @@
       "moduleResolution": "node",
       "baseUrl": "./src",
       "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true
+      "forceConsistentCasingInFileNames": true,
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
   },
   "lib": ["es2015"],
   "include": ["src/**/*"],
