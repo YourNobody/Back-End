@@ -1,13 +1,29 @@
 import express, { Application } from 'express';
 import mongoose from 'mongoose';
-import { homeRoutes } from './routes/home';
+import session, { SessionData } from 'express-session';
+import MongoDBStore from 'connect-mongodb-session';
+import { authRoutes, homeRoutes } from './routes/routes';
 import { options } from './constants/options';
 
 const app: Application = express();
+const MongoDBStoreSessioned = MongoDBStore(session);
+
+const store = new MongoDBStoreSessioned({
+  uri: options.MONGODB_URI,
+  collection: 'sessions'
+})
 
 app.use(express.json());
 
+app.use(session({
+  secret: options.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  store
+}));
+
 app.use('/', homeRoutes);
+app.use('/auth', authRoutes);
 
 void async function() {
   try {
