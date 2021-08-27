@@ -8,17 +8,9 @@ import { MyRequest, MyResponse } from '../interfaces/express.interface';
 const router = Router();
 
 //login
-router.get(routes.AUTH.LOGIN, validateSession, (req: MyRequest, res: MyResponse) => {
+router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
   try {
-    res.status(200).json({ message: 'Login page is loaded successfully' });
-  } catch (error) {
-    console.error(error)
-  }
-});
-
-router.post(routes.AUTH.LOGIN, validateSession, async (req: MyRequest, res: MyResponse) => {
-  try {
-    if (req.body) {
+    if (!req.body) {
       throw new Error('Somerthing went wrong!');
     }
     const {email, password} = req.body;
@@ -34,7 +26,7 @@ router.post(routes.AUTH.LOGIN, validateSession, async (req: MyRequest, res: MyRe
       }
 
     } else {
-      res.status(400).json({ message: 'Incorrect password or email' });
+      res.status(400).json({ message: 'Check for the password or email' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -43,17 +35,9 @@ router.post(routes.AUTH.LOGIN, validateSession, async (req: MyRequest, res: MyRe
 });
 
 //register
-router.get(routes.AUTH.REGISTER, validateSession, (req: MyRequest, res: MyResponse) => {
+router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
   try {
-    res.status(200).json({ message: 'Register page is loaded successfully' });
-  } catch (error) {
-    console.error(error)
-  }
-});
-
-router.post(routes.AUTH.REGISTER, validateSession, async (req: MyRequest, res: MyResponse) => {
-  try {
-    if (req.body) {
+    if (!req.body) {
       throw new Error('Somerthing went wrong!');
     }
     const {email, password} = req.body;
