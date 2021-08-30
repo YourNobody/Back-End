@@ -2,7 +2,6 @@ import { routes } from '../constants/routes';
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { User } from '../models/User';
-import { validateSession } from '../middlewares/validateSession';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
 
 const router = Router();
@@ -22,11 +21,11 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
       if (isSame) {
 
       } else {
-        res.status(400).json({ message: 'Incorrect password or email' });
+        return res.status(400).json({ message: 'Incorrect password or email' });
       }
 
     } else {
-      res.status(400).json({ message: 'Check for the password or email' });
+      return res.status(400).json({ message: 'Check for the password or email' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -40,12 +39,15 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
     if (!req.body) {
       throw new Error('Somerthing went wrong!');
     }
-    const {email, password} = req.body;
+    const {email, password, confirm} = req.body;
     const candidate = await User.findOne({ email });
 
     if (candidate) {
-      res.status(400).json({ message: 'User with such the email already exists' })
+      return res.status(400).json({ message: 'User with such the email already exists' });
     } else {
+      if (password !== confirm) {
+        return res.status(400).json({ message: 'Confirmation failed' });
+      }
       const hashedPassword = bcrypt.hashSync(password, 10);
 
       const user = new User({
