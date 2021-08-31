@@ -4,9 +4,10 @@ import bcrypt from 'bcrypt';
 import { User } from '../models/User';
 import { validateSession } from '../middlewares/validateSession';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
+import { UserControl } from 'controllers/User.controller';
 
 const router = Router();
-
+const cUser = new UserControl(User);
 //login
 router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
   try {
@@ -14,13 +15,14 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
       throw new Error('Somerthing went wrong!');
     }
     const {email, password} = req.body;
-    const candidate = await User.findOne({ email });
+    const candidate = await cUser.getOne({ email });
 
     if (candidate) {
       const isSame = bcrypt.compareSync(password, candidate.password);
 
       if (isSame) {
-
+        req.session.isAuthenticated = true;
+        res.status(201).json({ user: candidate, message: 'Successful Log In', isAuthenticated: true })
       } else {
         res.status(400).json({ message: 'Incorrect password or email' });
       }
@@ -40,20 +42,26 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
     if (!req.body) {
       throw new Error('Somerthing went wrong!');
     }
-    const {email, password} = req.body;
+    const {email, password, confirm} = req.body;
+
+    if (password !== confirm) {
+      res.status(400).json({ message: 'Paaswords don\'t match' })
+    }
+
     const candidate = await User.findOne({ email });
 
     if (candidate) {
       res.status(400).json({ message: 'User with such the email already exists' })
     } else {
       const hashedPassword = bcrypt.hashSync(password, 10);
-
       const user = new User({
         email, password: hashedPassword,
         questions: []
       });
 
       await user.save();
+
+      res.status(201).json({ user: candidate, message: 'Registration has gone successully' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
