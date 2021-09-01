@@ -1,8 +1,8 @@
 import express, { Application } from 'express';
 import mongoose from 'mongoose';
-import session, { SessionData } from 'express-session';
+import session from 'express-session';
 import MongoDBStore from 'connect-mongodb-session';
-import { authRoutes, homeRoutes } from './routes/routes';
+import { authRoutes, homeRoutes, profileRoutes } from './routes/routes';
 import { options } from './constants/options';
 
 const app: Application = express();
@@ -24,6 +24,7 @@ app.use(session({
 
 app.use('/', homeRoutes);
 app.use('/auth', authRoutes);
+app.use('/profile', profileRoutes);
 
 void async function() {
   try {

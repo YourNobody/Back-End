@@ -4,10 +4,9 @@ import bcrypt from 'bcrypt';
 import { User } from '../models/User';
 import { validateSession } from '../middlewares/validateSession';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
-import { UserControl } from 'controllers/User.controller';
+import { useSend } from '../helpers/send.helper';
 
 const router = Router();
-const cUser = new UserControl(User);
 //login
 router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
   try {
@@ -15,7 +14,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
       throw new Error('Somerthing went wrong!');
     }
     const {email, password} = req.body;
-    const candidate = await cUser.getOne({ email });
+    const candidate = await User.findOne({ email });
 
     if (candidate) {
       const isSame = bcrypt.compareSync(password, candidate.password);

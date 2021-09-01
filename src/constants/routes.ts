@@ -1,9 +1,12 @@
 export const routes = {
   AUTH: {
     LOGIN: '/login',
-    REGISTER: '/REGISTER'
+    REGISTER: '/register'
   },
   HOME: {
     ROOT: '/'
+  },
+  PROFILE: {
+    LOGOUT: '/logout'
   }
 };

@@ -1,8 +1,8 @@
 import { Response } from 'express';
 
-export const send = (res: Response) => {
+export const useSend = (res: Response) => {
   return (status: number, message?: string, params?: Record<string, unknown>) => {
-    res.send(status).json({
+    res.status(status).json({
       message,
       ...params
     });
