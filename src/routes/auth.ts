@@ -5,6 +5,8 @@ import { User } from '../models/User';
 import { validateSession } from '../middlewares/validateSession';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
 import { useSend } from '../helpers/send.helper';
+import { getResponsePayload } from '../helpers/payload.helper';
+import { Model } from 'mongoose';
 
 const router = Router();
 //login
@@ -14,14 +16,15 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
       throw new Error('Somerthing went wrong!');
     }
     const {email, password} = req.body;
-    const candidate = await User.findOne({ email });
+    const candidate = await User.findOne({ email }, 'email _id firstName lastName questions password');
 
     if (candidate) {
       const isSame = bcrypt.compareSync(password, candidate.password);
 
       if (isSame) {
         req.session.isAuthenticated = true;
-        res.status(201).json({ user: candidate, message: 'Successful Log In', isAuthenticated: true })
+        
+        res.status(201).json({ user: getResponsePayload(candidate, '_id:id email firstName lastName'), message: 'Successful Log In', isAuthenticated: true })
       } else {
         res.status(400).json({ message: 'Incorrect password or email' });
       }
