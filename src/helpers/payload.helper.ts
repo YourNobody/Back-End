@@ -1,4 +1,4 @@
-export const getResponsePayload = (obj: any, query: string) => {
+export const getPopulatedObject = (obj: any, query: string) => {
   if (!obj) return {};
   if (!query) return obj;
   return query.split(' ').reduce((acc: Record<string, unknown>, curr: string): Record<string, unknown> => {

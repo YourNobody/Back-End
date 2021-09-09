@@ -1,12 +1,10 @@
 import { routes } from '../constants/routes';
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import { User } from '../models/User';
-import { validateSession } from '../middlewares/validateSession';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
 import { useSend } from '../helpers/send.helper';
-import { getResponsePayload } from '../helpers/payload.helper';
-import { Model } from 'mongoose';
+import { getPopulatedObject } from '../helpers/payload.helper';
 
 const router = Router();
 //login
@@ -22,9 +20,14 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
       const isSame = bcrypt.compareSync(password, candidate.password);
 
       if (isSame) {
+        // req.session.user = candidate;
         req.session.isAuthenticated = true;
+
+        // req.session.save((err) => {
+        //   if (err) throw new Error('Session error, please try again');
+        // })
         
-        res.status(201).json({ user: getResponsePayload(candidate, '_id:id email firstName lastName'), message: 'Successful Log In', isAuthenticated: true })
+        res.status(201).json({ user: getPopulatedObject(candidate, '_id:id email firstName lastName'), message: 'Successful Log In', isAuthenticated: true })
       } else {
         res.status(400).json({ message: 'Incorrect password or email' });
       }
