@@ -2,8 +2,9 @@ import express, { Application } from 'express';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import MongoDBStore from 'connect-mongodb-session';
-import { authRoutes, homeRoutes, profileRoutes } from './routes/routes';
+import { authRoutes, homeRoutes, profileRoutes, quizesRoutes } from './routes/routes';
 import { options } from './constants/options';
+import { routes } from './constants/routes';
 
 const app: Application = express();
 const MongoDBStoreSessioned = MongoDBStore(session);
@@ -25,6 +26,7 @@ app.use(session({
 app.use('/', homeRoutes);
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
+app.use('/quizes', quizesRoutes);
 
 void async function() {
   try {

@@ -20,12 +20,12 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
       const isSame = bcrypt.compareSync(password, candidate.password);
 
       if (isSame) {
-        // req.session.user = candidate;
+        req.session.user = candidate;
         req.session.isAuthenticated = true;
 
-        // req.session.save((err) => {
-        //   if (err) throw new Error('Session error, please try again');
-        // })
+        req.session.save((err) => {
+          if (err) throw new Error('Session error, please try again');
+        })
         
         res.status(201).json({ user: getPopulatedObject(candidate, '_id:id email firstName lastName'), message: 'Successful Log In', isAuthenticated: true })
       } else {

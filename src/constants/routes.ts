@@ -10,8 +10,8 @@ export const routes = {
     LOGOUT: '/logout'
   },
   QUIZES: {
-    REMOVE: '/quizes/remove',
-    ADD: '/quizes/add',
+    REMOVE: '/remove',
+    CREATE: '/create',
     ROOT: '/quizes',
     TYPES: {
       TA: 'TA',
