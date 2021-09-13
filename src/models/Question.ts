@@ -1,16 +1,22 @@
-import { IQuestion, IAnswer } from "interfaces/Question.interface";
+import { IQuestion } from "interfaces/Question.interface";
 import { Schema, model, SchemaType } from "mongoose";
 import { refs } from "./refs";
 
 const QuestionSchema = new Schema<IQuestion>({
   question: { type: String, required: true },
   type: { type: String, required: true },
+  title: { type: String, required: true },
+  content: { type: String, required: false },
   userId: { type: Schema.Types.ObjectId, required: true },
-  answers: [
+  questionAnswers: [
+    {
+      answer: { type: String, required: true }
+    }
+  ],
+  usersAnswers: [
     {
       answer: { type: String, required: true },
-      userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: false },
-      amount: { type: Number, required: false }
+      userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: false }
     }
   ]
 });
