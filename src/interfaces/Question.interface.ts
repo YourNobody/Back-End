@@ -2,12 +2,16 @@ import { Schema } from "mongoose";
 
 export interface IAnswer {
   answer: string | number;
-  date: Date;
-  userId: Schema.Types.ObjectId; 
+  userId?: Schema.Types.ObjectId; 
 }
 
 export interface IQuestion {
   question: string;
+  type: QuestionTypes;
   answers: IAnswer[];
-  date: Date;
+  userId: Schema.Types.ObjectId; 
+};
+
+export enum QuestionTypes {
+  SA = 'SA', TA = 'TA', RA ='RA', AB ='AB'
 };

@@ -1,11 +1,12 @@
 import { routes } from '../constants/routes';
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import { User } from '../models/User';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
+import { useSend } from '../helpers/send.helper';
+import { getPopulatedObject } from '../helpers/payload.helper';
 
 const router = Router();
-
 //login
 router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
   try {
@@ -13,13 +14,20 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
       throw new Error('Somerthing went wrong!');
     }
     const {email, password} = req.body;
-    const candidate = await User.findOne({ email });
+    const candidate = await User.findOne({ email }, 'email _id firstName lastName questions password');
 
     if (candidate) {
       const isSame = bcrypt.compareSync(password, candidate.password);
 
       if (isSame) {
+        req.session.user = candidate;
+        req.session.isAuthenticated = true;
 
+        req.session.save((err) => {
+          if (err) throw new Error('Session error, please try again');
+        })
+        
+        res.status(201).json({ user: getPopulatedObject(candidate, '_id:id email firstName lastName'), message: 'Successful Log In', isAuthenticated: true })
       } else {
         return res.status(400).json({ message: 'Incorrect password or email' });
       }
@@ -40,6 +48,11 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
       throw new Error('Somerthing went wrong!');
     }
     const {email, password, confirm} = req.body;
+
+    if (password !== confirm) {
+      res.status(400).json({ message: 'Paaswords don\'t match' })
+    }
+
     const candidate = await User.findOne({ email });
 
     if (candidate) {
@@ -49,13 +62,14 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
         return res.status(400).json({ message: 'Confirmation failed' });
       }
       const hashedPassword = bcrypt.hashSync(password, 10);
-
       const user = new User({
         email, password: hashedPassword,
         questions: []
       });
 
       await user.save();
+
+      res.status(201).json({ user: candidate, message: 'Registration has gone successully' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });

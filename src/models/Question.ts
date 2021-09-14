@@ -4,17 +4,18 @@ import { refs } from "./refs";
 
 const QuestionSchema = new Schema<IQuestion>({
   question: { type: String, required: true },
-  date: { type: Date, required: true, default: Date.now },
+  type: { type: String, required: true },
+  userId: { type: Schema.Types.ObjectId, required: true },
   answers: [
     {
       answer: { type: String, required: true },
-      date: { type: Date, required: true, default: Date.now },
-      userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: true }
+      userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: false },
+      amount: { type: Number, required: false }
     }
   ]
 });
 
-const Question = model<IQuestion>(refs.USER, QuestionSchema);
+const Question = model<IQuestion>(refs.QUESTION, QuestionSchema);
 
 export { Question };
 
