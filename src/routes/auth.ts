@@ -3,6 +3,7 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import { User } from '../models/User';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
+import jwt from 'jsonwebtoken';
 import { useSend } from '../helpers/send.helper';
 import { getPopulatedObject } from '../helpers/payload.helper';
 
@@ -26,8 +27,18 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
         req.session.save((err) => {
           if (err) throw new Error('Session error, please try again');
         })
+
+        const token = jwt.sign(
+          { userId: candidate?._id },
+          process.env.JWT_SECRET as string,
+          { expiresIn: '1d' }
+        );
         
-        res.status(201).json({ user: getPopulatedObject(candidate, '_id:id email firstName lastName'), message: 'Successful Log In', isAuthenticated: true })
+        res.status(201).json({
+          token,
+          user: getPopulatedObject(candidate, '_id:id email firstName lastName'),
+          message: 'Successful Log In', isAuthenticated: true
+        })
       } else {
         return res.status(400).json({ message: 'Incorrect password or email' });
       }
@@ -35,7 +46,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
     } else {
       return res.status(400).json({ message: 'Check for the password or email' });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
     console.error(error);
   }
@@ -71,7 +82,7 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
 
       res.status(201).json({ user: candidate, message: 'Registration has gone successully' });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
     console.error(error);
   }
