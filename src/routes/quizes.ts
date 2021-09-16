@@ -8,7 +8,6 @@ import { validateSession } from './../middlewares/validateSession';
 import { Question } from '../models/Question';
 import { getPopulatedObject } from '../helpers/payload.helper';
 const router = Router();
-//add question
 
 router.post('/', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
@@ -19,10 +18,10 @@ router.post('/', async (req: MyRequest, res: MyResponse) => {
     const { type } = req.body;
 
     if (type) {
-      const questions = await Question.find({ type })
-      const populatedQuestions = questions.map(q => {
-        return getPopulatedObject(q, 'question type usersAnswers questionAnswers');
-      })
+      const questions = await Question.find({ type });   
+      const populatedQuestions = questions.map(q => {        
+        return getPopulatedObject(q, '_id:id question type questionAnswers usersAnswers title');
+      });
 
       if (questions) {
         return send(201, 'Questions loaded', { questions: populatedQuestions });
@@ -31,7 +30,7 @@ router.post('/', async (req: MyRequest, res: MyResponse) => {
     } else {
       throw new Error('Types isn\'t provided');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
     send(500, error.message);
   }
@@ -44,16 +43,15 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
     if (!req.body) {
       throw new Error('Somerthing went wrong!');
     }
-    const { type, questionAnswers, question, title } = req.body;
+    
+    const { type, questionAnswers, title, question } = req.body;
 
     if (req.session.user && req.session.isAuthenticated) {
       const questionAnswersToBD = questionAnswers.map((answer: string) => {
-        return {
-          answer, userId: req.session.user?._id
-        }
+        return { answer };
       });
       const questionToBD = new Question({
-        type, title, question, questionAnswers: questionAnswersToBD, userId: req.session.user?._id
+        type, question, questionAnswers: questionAnswersToBD, userId: req.session.user?._id, title, usersAnswers: []
       });
 
       await questionToBD.save();
@@ -62,7 +60,7 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
     } else {
       send(400, 'User isn\'t authenticated. Please log in to add a question');
     }
-  } catch (error) {
+  } catch (error: any) {
     send(500, error.message);
     console.error(error);
   }
@@ -78,7 +76,7 @@ router.post(routes.QUIZES.REMOVE, validateSession, async (req: MyRequest, res: M
     const { question_id } = req.query;
 
     if (req.session.user && req.session.isAuthenticated) {}
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
     console.error(error);
   }
