@@ -1,12 +1,12 @@
-import { routes } from '../constants/routes';
+import { routes } from '../../../Back-End/src/constants/routes';
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
-import { User } from '../models/User';
-import { MyRequest, MyResponse } from '../interfaces/express.interface';
-import { useSend } from '../helpers/send.helper';
-import { validateSession } from './../middlewares/validateSession';
-import { Question } from '../models/Question';
-import { getPopulatedObject } from '../helpers/payload.helper';
+import { User } from '../../../Back-End/src/models/User';
+import { MyRequest, MyResponse } from '../../../Back-End/src/interfaces/express.interface';
+import { useSend } from '../../../Back-End/src/helpers/send.helper';
+import { validateSession } from '../../../Back-End/src/middlewares/validateSession';
+import { Question } from '../../../Back-End/src/models/Question';
+import { getPopulatedObject } from '../../../Back-End/src/helpers/payload.helper';
 const router = Router();
 
 router.post('/', async (req: MyRequest, res: MyResponse) => {
@@ -44,14 +44,14 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
       throw new Error('Somerthing went wrong!');
     }
     
-    const { type, questionAnswers, title, question } = req.body;
+    const { type, questionAnswers, title, question, content } = req.body;
 
     if (req.session.user && req.session.isAuthenticated) {
       const questionAnswersToBD = questionAnswers.map((answer: string) => {
         return { answer };
       });
       const questionToBD = new Question({
-        type, question, questionAnswers: questionAnswersToBD, userId: req.session.user?._id, title, usersAnswers: []
+        type, content, question, questionAnswers: questionAnswersToBD, userId: req.session.user?._id, title, usersAnswers: []
       });
 
       await questionToBD.save();

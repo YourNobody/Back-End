@@ -3,8 +3,7 @@ import { Schema, model, SchemaType } from "mongoose";
 import { refs } from "./refs";
 
 const UserSchema = new Schema<IUser>({
-  firstName: { type: String, required: false },
-  lastName: { type: String, required: false },
+  nickname: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   questions: [

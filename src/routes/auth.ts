@@ -15,7 +15,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
       throw new Error('Somerthing went wrong!');
     }
     const {email, password} = req.body;
-    const candidate = await User.findOne({ email }, 'email _id firstName lastName questions password');
+    const candidate = await User.findOne({ email }, 'email _id nickname password');
 
     if (candidate) {
       const isSame = bcrypt.compareSync(password, candidate.password);
@@ -37,7 +37,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
         
         res.status(201).json({
           token,
-          user: getPopulatedObject(candidate, '_id:id email firstName lastName'),
+          user: getPopulatedObject(candidate, '_id:id email nickname'),
           message: 'Successful Log In', isAuthenticated: true
         })
       } else {
@@ -55,36 +55,44 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
 
 //register
 router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
   try {
     if (!req.body) {
       throw new Error('Somerthing went wrong!');
     }
-    const {email, password, confirm} = req.body;
-
+    const {email, password, confirm, nickname} = req.body;
+    
     if (password !== confirm) {
-      res.status(400).json({ message: 'Paaswords don\'t match' })
+      send(400, 'Paaswords don\'t match');
     }
 
-    const candidate = await User.findOne({ email });
+    const candidateByEmail = await User.findOne({ email });
+    const candidateByNickname = await User.findOne({ nickname });
 
-    if (candidate) {
-      return res.status(400).json({ message: 'User with such the email already exists' });
+    if (candidateByNickname) {
+      return send(400, 'User with such the Nickname is already exists');
+    }
+    if (candidateByEmail) {
+      return send(400, 'User with such the email already exists');
     } else {
       if (password !== confirm) {
-        return res.status(400).json({ message: 'Confirmation failed' });
+        return send(400, 'Confirmation failed');
       }
       const hashedPassword = bcrypt.hashSync(password, 10);
       const user = new User({
-        email, password: hashedPassword,
+        email, nickname,
+        password: hashedPassword,
         questions: []
       });
 
       await user.save();
 
-      res.status(201).json({ user: candidate, message: 'Registration has gone successully' });
+      return send(201, 'Registration has gone successully', {
+        user: candidateByEmail
+      });
     }
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    send(500, error.message);
     console.error(error);
   }
 });

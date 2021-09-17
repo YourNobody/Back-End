@@ -19,6 +19,8 @@ const QuestionSchema = new Schema<IQuestion>({
       userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: false }
     }
   ]
+},{
+  timestamps: true
 });
 
 const Question = model<IQuestion>(refs.QUESTION, QuestionSchema);
