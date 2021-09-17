@@ -19,13 +19,13 @@ router.post('/', async (req: MyRequest, res: MyResponse) => {
     const { type } = req.body;
 
     if (type) {
-      const questions = await Question.find({ type })
+      const questions = await Question.find({ type });
       const populatedQuestions = questions.map(q => {
         return getPopulatedObject(q, 'question type answers');
-      })
-
+      });
+      
       if (questions) {
-        return send(201, 'Questions loaded', { questions: populatedQuestions });
+        return send(201, 'Questions loaded', { questions: questions });
       }
 
     } else {
