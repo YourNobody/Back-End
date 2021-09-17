@@ -28,11 +28,12 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
           if (err) throw new Error('Session error, please try again');
         })
 
-        const token = jwt.sign(
-          { userId: candidate?._id },
-          process.env.JWT_SECRET as string,
-          { expiresIn: '1d' }
-        );
+        const token = jwt.sign({
+          userId: candidate?._id,
+          expiresIn: 1000 * 60 * 60,
+          expiresAt: Date.now() + 1000 * 60 * 60,
+          algorithm: 'RS256'
+        }, process.env.JWT_SECRET as string);
         
         res.status(201).json({
           token,

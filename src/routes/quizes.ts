@@ -24,7 +24,7 @@ router.post('/', async (req: MyRequest, res: MyResponse) => {
       });
 
       if (questions) {
-        return send(201, 'Questions loaded', { questions: populatedQuestions });
+        return send(201, 'Questions loaded', { questions: questions });
       }
 
     } else {
