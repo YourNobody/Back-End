@@ -1,5 +1,5 @@
-import { IQuiz } from "interfaces/Quiz.interface";
-import { Schema, model, SchemaType } from "mongoose";
+import { IQuiz } from "../interfaces/Quiz.interface";
+import { Schema, model } from "mongoose";
 import { refs } from "./refs";
 
 const QuizSchema = new Schema<IQuiz>({

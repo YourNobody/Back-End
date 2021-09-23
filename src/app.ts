@@ -8,7 +8,7 @@ import MongoDBStore from 'connect-mongodb-session';
 import cors from 'cors';
 import hpp from 'hpp';
 import helmet from 'helmet';
-import { authRoutes, homeRoutes, profileRoutes, quizesRoutes } from './routes/routes';
+import { authRoutes, profileRoutes, quizesRoutes } from './routes/routes';
 import { routes } from './constants/routes';
 
 const app: Application = express();
@@ -31,7 +31,6 @@ app.use(session({
   store
 }));
 
-app.use('/', homeRoutes);
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
 app.use('/quizes', quizesRoutes);

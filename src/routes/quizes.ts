@@ -1,13 +1,13 @@
-import { routes } from '../../../Back-End/src/constants/routes';
+import { routes } from '../constants/routes';
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
-import { User } from '../../../Back-End/src/models/User';
-import { MyRequest, MyResponse } from '../../../Back-End/src/interfaces/express.interface';
-import { useSend } from '../../../Back-End/src/helpers/send.helper';
-import { validateSession } from '../../../Back-End/src/middlewares/validateSession';
-import { getPopulatedObject } from '../../../Back-End/src/helpers/payload.helper';
+import { User } from '../models/User';
+import { MyRequest, MyResponse } from '../interfaces/express.interface';
+import { useSend } from '../helpers/send.helper';
+import { validateSession } from '../middlewares/validateSession';
+import { getPopulatedObject } from '../helpers/payload.helper';
 import { Quiz } from '../models/Quiz';
-import { ANONYMOUS_NAME } from './../constants/app';
+import { ANONYMOUS_NAME, quizesNames } from './../constants/app';
 const router = Router();
 
 router.get('/', async (req: MyRequest, res: MyResponse) => {
@@ -42,23 +42,53 @@ router.get('/', async (req: MyRequest, res: MyResponse) => {
   }
 });
 
+router.post('/statistics', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.query) throw new Error('Query wasn\t provided');
+    const { quizId } = req.query;
+
+    if (!quizId) throw new Error('Quiz id wasn\t provided');
+    const quiz = await Quiz.findById(quizId);
+
+    if (quiz) {
+      const { quizAnswers, usersAnswers } = quiz;
+
+      const quizStat = usersAnswers.reduce((acc, curr): any => {
+        if (curr?._id?.toString()) {
+          //@ts-ignore
+          if (acc[curr?._id?.toString()]) {
+            //@ts-ignore
+            acc[curr?._id?.toString()].amount++;
+          }
+          //@ts-ignore
+          if (!acc[curr?._id?.toString()]) {
+            //@ts-ignore
+            acc[curr?._id?.toString()] = {
+              ...curr,
+              amount: 0
+            };
+          }
+        }
+      }, {})
+    }
+
+  } catch (error) {
+    
+  }
+})
+
 router.post('/save', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
     if (!req.body) throw new Error('Something went wrong');
 
-    const { quizId, answer } = req.body;
+    const { quizId, quizAnswerId } = req.body;
 
     if (quizId) {
       const quiz = await Quiz.findById(quizId);
-
-      const newAnswer = { answer, userId: '' };
-
-      if (req.session.user && req.session.user._id) {
-        newAnswer.userId = req.session.user._id;
-      } else {
-        newAnswer.userId = ANONYMOUS_NAME;
-      }
+      const quizAnswer = quiz?.quizAnswers.find(qa => qa._id?.toString() === quizAnswerId.toString());
+      const newAnswer = { answer: quizAnswer?.answer, userId: req.session?.user?._id, quizAnswerId: quizAnswer?._id };
 
       //@ts-ignore
       await quiz?.update({ usersAnswers: [...quiz.usersAnswers, newAnswer] })
@@ -104,7 +134,8 @@ router.post('/', async (req: MyRequest, res: MyResponse) => {
       });
 
       if (quizes) {
-        return send(201, 'Questions loaded', { quizes: quizesWithPopulatedUser });
+        //@ts-ignore
+        return send(201, quizesNames[type.toUpperCase()] + ' are loaded', { quizes: quizesWithPopulatedUser });
       }
 
     } else {
