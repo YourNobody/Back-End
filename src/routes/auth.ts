@@ -22,12 +22,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
 
       if (isSame) {
         req.session.user = candidate;
-        req.session.isAuthenticated = true;
-
-        req.session.save((err) => {
-          if (err) throw new Error('Session error, please try again');
-        })
-
+        
         const token = jwt.sign({
           userId: candidate?._id,
           expiresIn: 1000 * 60 * 60,
@@ -35,11 +30,20 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
           algorithm: 'RS256'
         }, process.env.JWT_SECRET as string);
         
+        
         res.status(201).json({
           token,
           user: getPopulatedObject(candidate, '_id:id email nickname'),
-          message: 'Successful Log In', isAuthenticated: true
+          message: 'Successful Log In',
         })
+
+        req.session.token = token;
+
+        req.session.save((err) => {
+          if (err) throw new Error('Session error, please try again');
+        })
+
+        return;
       } else {
         return res.status(400).json({ message: 'Incorrect password or email' });
       }

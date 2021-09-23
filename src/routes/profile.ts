@@ -13,7 +13,7 @@ router.post(routes.PROFILE.LOGOUT, async (req: MyRequest, res: MyResponse) => {
       if (err) throw err;
       send(201, 'Logged out');
     })
-  } catch (err) {
+  } catch (err: any) {
     send(400, err.message);
   }
 });

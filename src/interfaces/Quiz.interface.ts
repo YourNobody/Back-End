@@ -5,16 +5,15 @@ export interface IUserAnswer {
   userId?: Schema.Types.ObjectId; 
 }
 
-export interface IQuestion {
+export interface IQuiz {
   question: string;
-  type: QuestionTypes;
+  type: QuizesTypes;
   title: string;
-  content?: string;
-  questionAnswers: string[];
+  quizAnswers: string[];
   usersAnswers: IUserAnswer[];
-  userId: Schema.Types.ObjectId; 
+  userId: Schema.Types.ObjectId;
 };
 
-export enum QuestionTypes {
+export enum QuizesTypes {
   SA = 'SA', TA = 'TA', RA ='RA', AB ='AB'
 };
