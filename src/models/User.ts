@@ -8,7 +8,7 @@ const UserSchema = new Schema<IUser>({
   password: { type: String, required: true },
   quizes: [
     {
-      quizId: {type: Schema.Types.ObjectId, required: true, unique: true}
+      quizId: {type: Schema.Types.ObjectId, ref: refs.Quiz, required: true, unique: true}
     }
   ]
 });

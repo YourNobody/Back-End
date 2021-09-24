@@ -6,7 +6,7 @@ const QuizSchema = new Schema<IQuiz>({
   question: { type: String, required: true },
   type: { type: String, required: true },
   title: { type: String, required: true, unique: true },
-  userId: { type: Schema.Types.ObjectId, required: true },
+  userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: true },
   quizAnswers: [
     {
       answer: { type: String, required: true },
@@ -16,6 +16,8 @@ const QuizSchema = new Schema<IQuiz>({
     {
       answer: { type: String, required: true },
       userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: false },
+      isAnonimous: { type: Boolean, required: false },
+      quizAnswerId: { type: Schema.Types.ObjectId, required: true },
       createdAt: { type: Date, required: true, default: Date.now}
     }
   ]
@@ -23,7 +25,7 @@ const QuizSchema = new Schema<IQuiz>({
   timestamps: true
 });
 
-const Quiz = model<IQuiz>(refs.QUESTION, QuizSchema);
+const Quiz = model<IQuiz>(refs.Quiz, QuizSchema);
 
 export { Quiz };
 

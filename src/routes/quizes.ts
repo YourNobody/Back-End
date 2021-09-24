@@ -42,39 +42,71 @@ router.get('/', async (req: MyRequest, res: MyResponse) => {
   }
 });
 
-router.post('/statistics', async (req: MyRequest, res: MyResponse) => {
+router.post('/remove', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) throw new Error('Something went wrong');
+
+    const { quizId } = req.body;
+
+    if (quizId) {
+      await Quiz.findByIdAndDelete(quizId);
+    }
+
+    send(200, 'Quiz have been deleted successfully');
+
+  } catch (err: any) {
+    console.error(err);
+    send(500, err.message);
+  }
+});
+
+router.get('/statistics', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
     if (!req.query) throw new Error('Query wasn\t provided');
     const { quizId } = req.query;
 
     if (!quizId) throw new Error('Quiz id wasn\t provided');
-    const quiz = await Quiz.findById(quizId);
-
+    const quiz = await Quiz.findById(quizId).populate('usersAnswers.userId');
+    
     if (quiz) {
       const { quizAnswers, usersAnswers } = quiz;
 
-      const quizStat = usersAnswers.reduce((acc, curr): any => {
-        if (curr?._id?.toString()) {
+      const stats = quizAnswers.reduce((acc, curr): any => {
+        if (curr._id) {
           //@ts-ignore
-          if (acc[curr?._id?.toString()]) {
-            //@ts-ignore
-            acc[curr?._id?.toString()].amount++;
-          }
-          //@ts-ignore
-          if (!acc[curr?._id?.toString()]) {
-            //@ts-ignore
-            acc[curr?._id?.toString()] = {
-              ...curr,
-              amount: 0
-            };
+          acc[curr?._id?.toString()] = {
+            users: [],
+            answer: curr.answer,
+            amount: 0
           }
         }
-      }, {})
+        return acc;
+      }, {});
+
+      
+      for (const UA of usersAnswers) {
+        //@ts-ignore
+        const stat = stats[UA?.quizAnswerId?.toString()];
+        if (!stat) continue;
+        stat.amount++;
+        if (UA.isAnonimous) {
+          stat.users.push({ isAnonimous: true, nickname: null, email: null });
+        } else {
+          //@ts-ignore
+          stat.users.push({ isAnonimous: false, nickname: UA.userId?.nickname || null, email: UA.userId?.email || null})
+        }
+      }
+
+      const statsFinal = Object.entries(stats).map(s => s[1]);
+
+      return send(200, 'Statistics are loaded', { usersAnswers: statsFinal });
     }
 
-  } catch (error) {
-    
+  } catch (error: any) {
+    console.error(error);
+    send(500, error.message);
   }
 })
 
@@ -88,7 +120,14 @@ router.post('/save', async (req: MyRequest, res: MyResponse) => {
     if (quizId) {
       const quiz = await Quiz.findById(quizId);
       const quizAnswer = quiz?.quizAnswers.find(qa => qa._id?.toString() === quizAnswerId.toString());
-      const newAnswer = { answer: quizAnswer?.answer, userId: req.session?.user?._id, quizAnswerId: quizAnswer?._id };
+      const newAnswer: any = { answer: quizAnswer?.answer, quizAnswerId: quizAnswer?._id };
+
+      if (!req.session?.user?._id) {
+        newAnswer.userId = null;
+        newAnswer.isAnonimous = true;
+      } else {
+        newAnswer.userId = req.session.user._id;
+      }
 
       //@ts-ignore
       await quiz?.update({ usersAnswers: [...quiz.usersAnswers, newAnswer] })

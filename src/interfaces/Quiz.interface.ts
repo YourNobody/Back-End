@@ -3,6 +3,7 @@ import { Schema } from "mongoose";
 export interface IUserAnswer {
   answer: string | number;
   userId?: Schema.Types.ObjectId; 
+  isAnonimous?: boolean;
   _id?: Schema.Types.ObjectId
 }
 

@@ -1,4 +1,4 @@
 export const refs = {
   USER: 'User',
-  QUESTION: 'Quiz'
+  Quiz: 'Quiz'
 }
