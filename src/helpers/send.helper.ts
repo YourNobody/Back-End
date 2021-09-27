@@ -1,10 +1,17 @@
 import { Response } from 'express';
 
 export const useSend = (res: Response) => {
-  return (status: number, message?: string, params?: Record<string, unknown>) => {
-    res.status(status).json({
-      message,
-      ...params
-    });
+  return function send(status: number, message?: string | Record<string, unknown>, params?: Record<string, unknown>): void {
+    if (arguments.length === 3) {
+      res.status(status).json({
+        message,
+        ...params
+      })
+    }
+    if(arguments.length < 3) {
+      if (message instanceof Object) {
+        res.status(status).json({ ...message })
+      }
+    }
   }
 };

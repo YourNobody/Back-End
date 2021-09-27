@@ -1,9 +1,19 @@
-import { IQuestion } from "./Question.interface";
+import { Schema } from "mongoose";
+
+type IUserQuizes = {
+  quizId: Schema.Types.ObjectId
+};
 
 export interface IUser {
-  firstName?: string;
-  lastName?: string;
+  nickname: string;
   email: string;
   password: string;
-  questions: IQuestion[];
+  quizes: IUserQuizes[];
+  _id?: Schema.Types.ObjectId;
+  id?: Schema.Types.ObjectId
 };
+
+export interface IUserQuizCreator {
+  nickname: string | null;
+  email: string | null;
+}

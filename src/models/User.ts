@@ -3,24 +3,15 @@ import { Schema, model, SchemaType } from "mongoose";
 import { refs } from "./refs";
 
 const UserSchema = new Schema<IUser>({
-  firstName: { type: String, required: false },
-  lastName: { type: String, required: false },
+  nickname: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  questions: [
+  quizes: [
     {
-      question: { type: String, required: true },
-      answers: [
-        {
-          answer: { type: String, required: true },
-          date: { type: Date, required: true, default: Date.now },
-          userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: true }
-        }
-      ],
-      date: { type: Date, required: true, default: Date.now }
+      quizId: {type: Schema.Types.ObjectId, ref: refs.Quiz, required: true, unique: true}
     }
   ]
-});
+}, { versionKey: false });
 
 const User = model<IUser>(refs.USER, UserSchema);
 

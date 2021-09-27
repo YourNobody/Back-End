@@ -12,7 +12,6 @@ export interface MyResponse extends Response {
 }
 
 export interface MySession extends SessionData {
-  isAuthenticated?: boolean;
-  user?: (Document<any, any, IUser> & IUser) | null
-  ;
+  token?: string;
+  user?: (Document<any, any, IUser> & IUser) | null;
 }
