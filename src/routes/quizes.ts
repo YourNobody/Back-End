@@ -12,7 +12,9 @@ const router = Router();
 
 router.get('/', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
-  try {    
+  try {
+    console.log(req.session);
+    
     if (!req.session.user) return send(400, 'Something went wrong');
     if (req.session.token) {
       if (req.session.user) {
@@ -71,7 +73,7 @@ router.get('/statistics', async (req: MyRequest, res: MyResponse) => {
   try {
     if (!req.query) throw new Error('Query wasn\t provided');
     const { quizId } = req.query;
-
+    
     if (!quizId) throw new Error('Quiz id wasn\t provided');
     if (req.session.token && req.session.user) {
       const quiz = await Quiz.findById(quizId).populate('usersAnswers.userId');

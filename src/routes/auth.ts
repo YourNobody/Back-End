@@ -30,19 +30,20 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
           expiresAt: Date.now() + 1000 * 60 * 60,
           algorithm: 'RS256'
         }, process.env.JWT_SECRET as string);
-        
-        
-        res.status(201).json({
-          token,
-          //@ts-ignore
-          user: withoutParameter(candidate, _id, 'id'),
-          message: 'Successful Log In',
-        })
 
         req.session.token = token;
 
         req.session.save((err) => {
-          if (err) throw new Error('Session error, please try again');
+          if (err) {
+            console.log(err);
+            throw new Error('Session error, please try again');
+          }
+          return res.status(201).json({
+            token,
+            //@ts-ignore
+            user: withoutParameter(withoutParameter({...candidate._doc}, 'password'), _id, 'id'),
+            message: 'Successful Log In',
+          })
         })
         return;
       } else {
@@ -103,13 +104,39 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
 router.post('/logout', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
-    req.session.destroy(err => {
-      if (err) throw err;
-      send(201, 'Logged out');
+    await req.session.destroy(err => {
+      if (err) {
+        console.error(err);
+        throw err;
+      }
     })
+    return send(201, 'Logged out');
   } catch (err: any) {
     console.error(err.message)
     send(400, err.message);
+  }
+});
+
+router.post('/check', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) throw new Error('Something went wrong');
+    if (!req.session || !req.session.token) {
+      return send(201, 'User session expired', { isAuthenticated: false });
+    }
+
+    const { token } = req.body;
+    if (req.session.token === token) {
+      return send(201, 'User session still exists', { isAuthenticated: true });
+    } else {
+      req.session.destroy(err => {
+        if (err) throw err;
+      })
+      return send(201, 'User session expired', { isAuthenticated: false });
+    }
+  } catch (err: any) {
+    console.log(err);
+    send(500, err.message)
   }
 });
 
