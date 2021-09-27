@@ -22,7 +22,8 @@ const QuizSchema = new Schema<IQuiz>({
     }
   ]
 },{
-  timestamps: true
+  timestamps: true,
+  versionKey: false
 });
 
 const Quiz = model<IQuiz>(refs.Quiz, QuizSchema);

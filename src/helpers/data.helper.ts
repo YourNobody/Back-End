@@ -32,3 +32,22 @@ function getFirstParametr(str: string) {
   }
   return str;
 }
+
+export const withoutParameter = <T extends Record<string, unknown>>(obj: T, theRemoving: string, theReplacing?: string): T => {
+  if (theRemoving && !obj[theRemoving]) return obj;
+  if (theReplacing) {
+    if (obj[theRemoving]) {
+      const newObj = {
+        ...obj,
+        [theReplacing]: obj[theRemoving]
+      };
+      delete newObj[theRemoving];
+      return newObj;
+    } else {
+      return obj;
+    }
+  } else {
+    delete obj[theRemoving];
+    return obj;
+  }
+};

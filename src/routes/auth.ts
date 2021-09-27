@@ -5,7 +5,8 @@ import { User } from '../models/User';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
 import jwt from 'jsonwebtoken';
 import { useSend } from '../helpers/send.helper';
-import { getPopulatedObject } from '../helpers/payload.helper';
+import { getPopulatedObject, withoutParameter } from '../helpers/data.helper';
+import { _id } from '../constants/app';
 
 const router = Router();
 //login
@@ -33,7 +34,8 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
         
         res.status(201).json({
           token,
-          user: getPopulatedObject(candidate, '_id:id email nickname'),
+          //@ts-ignore
+          user: withoutParameter(candidate, _id, 'id'),
           message: 'Successful Log In',
         })
 
@@ -42,7 +44,6 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
         req.session.save((err) => {
           if (err) throw new Error('Session error, please try again');
         })
-
         return;
       } else {
         return res.status(400).json({ message: 'Incorrect password or email' });
@@ -86,18 +87,29 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
       const user = new User({
         email, nickname,
         password: hashedPassword,
-        questions: []
+        quizes: []
       });
 
       await user.save();
 
-      return send(201, 'Registration has gone successully', {
-        user: candidateByEmail
-      });
+      return send(201, 'Registration has gone successully');
     }
   } catch (error: any) {
     send(500, error.message);
     console.error(error);
+  }
+});
+
+router.post('/logout', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    req.session.destroy(err => {
+      if (err) throw err;
+      send(201, 'Logged out');
+    })
+  } catch (err: any) {
+    console.error(err.message)
+    send(400, err.message);
   }
 });
 

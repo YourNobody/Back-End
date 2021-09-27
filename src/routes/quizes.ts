@@ -1,13 +1,13 @@
-import { routes } from '../constants/routes';
 import { Router } from 'express';
-import bcrypt from 'bcrypt';
 import { User } from '../models/User';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
 import { useSend } from '../helpers/send.helper';
-import { validateSession } from '../middlewares/validateSession';
-import { getPopulatedObject } from '../helpers/payload.helper';
+import { getPopulatedObject, withoutParameter } from '../helpers/data.helper';
 import { Quiz } from '../models/Quiz';
-import { ANONYMOUS_NAME, quizesNames } from './../constants/app';
+import { quizesNames, __v, _id } from './../constants/app';
+import { IQuiz, IQuizStatistic } from 'interfaces/Quiz.interface';
+import { Schema } from 'mongoose';
+import { IUserQuizCreator } from 'interfaces/User.interface';
 const router = Router();
 
 router.get('/', async (req: MyRequest, res: MyResponse) => {
@@ -16,29 +16,33 @@ router.get('/', async (req: MyRequest, res: MyResponse) => {
     if (!req.session.user) return send(400, 'Something went wrong');
     if (req.session.token) {
       if (req.session.user) {
-        const user = await User.findOne({ email: req.session.user.email });
-        
-        const quizesIds = user?.quizes;
-        
-        let quizes = [];
-        if (quizesIds) {
-          for (let quiz of quizesIds) {
-            const single = await Quiz.findById(quiz.quizId);
-            if (single) {
-              quizes.push(single);
-            }
-          }
-        }
-
-        send(200, 'Your quizes loaded', { quizes });
+        const user = await User.findOne({ email: req.session.user.email }).populate('quizes.quizId');
+        const quizes = user?.quizes.reduce((acc, curr) => {
+          if (!curr.quizId) return acc;
+          //@ts-ignore
+          const quiz: IQuiz = withoutParameter({...curr.quizId._doc}, '_id', 'id');
+          quiz.quizAnswers.forEach(qa => {
+            //@ts-ignore
+            qa = withoutParameter(qa, _id, 'id') as typeof qa;
+          })
+          quiz.usersAnswers.forEach(ua => {
+            //@ts-ignore
+            ua = withoutParameter(ua, _id, 'id') as typeof ua;
+          })
+          //@ts-ignore
+          delete quiz[__v];
+          //@ts-ignore
+          acc.push(quiz);
+          return acc;
+        }, []);
+        return send(200, 'Your quizzes loaded successully', { quizes });
       }
-
     } else {
       return send(400, 'User isn\'t authenticated');
     }
-  } catch (error) {
-    console.log(error);
-    
+  } catch (error: any) {
+    console.log(error.message);
+    send(500, error.message);
   }
 });
 
@@ -49,11 +53,12 @@ router.post('/remove', async (req: MyRequest, res: MyResponse) => {
 
     const { quizId } = req.body;
 
-    if (quizId) {
-      await Quiz.findByIdAndDelete(quizId);
+    if (req.session.token && req.session.user) {
+      if (quizId) {
+        await Quiz.findByIdAndDelete(quizId);
+        return send(200, 'Quiz have been deleted successfully');
+      }
     }
-
-    send(200, 'Quiz have been deleted successfully');
 
   } catch (err: any) {
     console.error(err);
@@ -68,40 +73,42 @@ router.get('/statistics', async (req: MyRequest, res: MyResponse) => {
     const { quizId } = req.query;
 
     if (!quizId) throw new Error('Quiz id wasn\t provided');
-    const quiz = await Quiz.findById(quizId).populate('usersAnswers.userId');
-    
-    if (quiz) {
-      const { quizAnswers, usersAnswers } = quiz;
-
-      const stats = quizAnswers.reduce((acc, curr): any => {
-        if (curr._id) {
+    if (req.session.token && req.session.user) {
+      const quiz = await Quiz.findById(quizId).populate('usersAnswers.userId');
+      
+      if (quiz) {
+        const { quizAnswers, usersAnswers } = quiz;
+  
+        const stats = quizAnswers.reduce((acc, curr): Record<string, IQuizStatistic> => {
+          if (curr._id) {
+            //@ts-ignore
+            acc[curr?._id?.toString()] = {
+              users: [],
+              answer: curr.answer,
+              amount: 0
+            }
+          }
+          return acc;
+        }, {} as Record<string, IQuizStatistic>);
+  
+        
+        for (const UA of usersAnswers) {
           //@ts-ignore
-          acc[curr?._id?.toString()] = {
-            users: [],
-            answer: curr.answer,
-            amount: 0
+          const stat = stats[UA?.quizAnswerId?.toString()];
+          if (!stat) continue;
+          stat.amount++;
+          if (UA.isAnonimous) {
+            stat.users.push({ isAnonimous: true, nickname: null, email: null });
+          } else {
+            //@ts-ignore
+            stat.users.push({ isAnonimous: false, nickname: UA.userId?.nickname || null, email: UA.userId?.email || null})
           }
         }
-        return acc;
-      }, {});
-
-      
-      for (const UA of usersAnswers) {
-        //@ts-ignore
-        const stat = stats[UA?.quizAnswerId?.toString()];
-        if (!stat) continue;
-        stat.amount++;
-        if (UA.isAnonimous) {
-          stat.users.push({ isAnonimous: true, nickname: null, email: null });
-        } else {
-          //@ts-ignore
-          stat.users.push({ isAnonimous: false, nickname: UA.userId?.nickname || null, email: UA.userId?.email || null})
-        }
+  
+        const statsFinal = Object.entries(stats).map(s => s[1]);
+  
+        return send(200, 'Statistics are loaded', { usersAnswers: statsFinal });
       }
-
-      const statsFinal = Object.entries(stats).map(s => s[1]);
-
-      return send(200, 'Statistics are loaded', { usersAnswers: statsFinal });
     }
 
   } catch (error: any) {
@@ -120,13 +127,16 @@ router.post('/save', async (req: MyRequest, res: MyResponse) => {
     if (quizId) {
       const quiz = await Quiz.findById(quizId);
       const quizAnswer = quiz?.quizAnswers.find(qa => qa._id?.toString() === quizAnswerId.toString());
-      const newAnswer: any = { answer: quizAnswer?.answer, quizAnswerId: quizAnswer?._id };
+      const newAnswer = { answer: quizAnswer?.answer, quizAnswerId: quizAnswer?._id } as {
+        answer: string; quizAnswerId: Schema.Types.ObjectId, userId: Schema.Types.ObjectId | null; isAnonimous: boolean;
+      };
 
       if (!req.session?.user?._id) {
         newAnswer.userId = null;
         newAnswer.isAnonimous = true;
       } else {
         newAnswer.userId = req.session.user._id;
+        newAnswer.isAnonimous = false;
       }
 
       //@ts-ignore
@@ -154,29 +164,21 @@ router.post('/', async (req: MyRequest, res: MyResponse) => {
     const { type } = req.body;
 
     if (type) {
-      const quizes = await Quiz.find({ type });
-      let quizesWithPopulatedUser = [];
-      for (let quiz of quizes) {
-        const user = await User.findById(quiz.userId);
+      const allQuizes = await Quiz.find({ type }).populate('userId');
+      const quizes = allQuizes.map((q): IQuiz & IUserQuizCreator => {
+        const creator = { nickname: null, email: null } as IUserQuizCreator;
+        if (q.userId) {
+          //@ts-ignore
+          creator.nickname = q.userId.nickname; creator.email = q.userId.email;
+        }
         //@ts-ignore
-        const populated = { ...quiz._doc, creator: {
-          nickname: user?.nickname,
-          email: user?.email
-        }};
+        const quiz = withoutParameter({...q._doc, creator}, _id, 'id') as IQuiz & IUserQuizCreator;
+        
         //@ts-ignore
-        delete populated.userId;
-        quizesWithPopulatedUser.push(populated);
-      }
-
-      const populatedQuizes = quizes.map(q => {        
-        return getPopulatedObject(q, '_id:id question type questionAnswers usersAnswers title');
+        return withoutParameter(withoutParameter(quiz, 'userId'), __v);
       });
-
-      if (quizes) {
-        //@ts-ignore
-        return send(201, quizesNames[type.toUpperCase()] + ' are loaded', { quizes: quizesWithPopulatedUser });
-      }
-
+      //@ts-ignore
+      return send(201, quizesNames[type.toUpperCase()] + ' are loaded', { quizes });
     } else {
       throw new Error('Types isn\'t provided');
     }
@@ -229,22 +231,6 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
     }
   } catch (error: any) {
     send(500, error.message);
-    console.error(error);
-  }
-});
-
-//remove quiz
-router.post(routes.QUIZES.REMOVE, validateSession, async (req: MyRequest, res: MyResponse) => {
-  const send = useSend(res);
-  try {
-    if (!req.query) {
-      throw new Error('Somerthing went wrong!');
-    }
-    const { question_id } = req.query;
-
-    if (req.session.user && req.session.token) {}
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
     console.error(error);
   }
 });

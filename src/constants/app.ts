@@ -7,3 +7,6 @@ export const quizesNames = {
   [QuizesTypes.RA]: 'Rating Quizes',
   [QuizesTypes.AB]: 'A/B Quizes'
 }
+
+export const __v = '__v';
+export const _id = '_id';

@@ -11,7 +11,7 @@ const UserSchema = new Schema<IUser>({
       quizId: {type: Schema.Types.ObjectId, ref: refs.Quiz, required: true, unique: true}
     }
   ]
-});
+}, { versionKey: false });
 
 const User = model<IUser>(refs.USER, UserSchema);
 

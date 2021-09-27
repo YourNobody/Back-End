@@ -9,4 +9,11 @@ export interface IUser {
   email: string;
   password: string;
   quizes: IUserQuizes[];
+  _id?: Schema.Types.ObjectId;
+  id?: Schema.Types.ObjectId
 };
+
+export interface IUserQuizCreator {
+  nickname: string | null;
+  email: string | null;
+}
