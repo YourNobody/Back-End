@@ -11,6 +11,7 @@ import { _id } from '../constants/app';
 const router = Router();
 //login
 router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
   try {
     if (!req.body) {
       throw new Error('Somerthing went wrong!');
@@ -38,7 +39,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
             console.log(err);
             throw new Error('Session error, please try again');
           }
-          return res.status(201).json({
+          return send(201, '', {
             token,
             //@ts-ignore
             user: withoutParameter(withoutParameter({...candidate._doc}, 'password'), _id, 'id'),
@@ -47,14 +48,14 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
         })
         return;
       } else {
-        return res.status(400).json({ message: 'Incorrect password or email' });
+        return send(400, 'Incorrect password or email');
       }
 
     } else {
-      return res.status(400).json({ message: 'Check for the password or email' });
+      return send(400, 'Check for the password or email');
     }
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    send(500, error.message);
     console.error(error);
   }
 });
@@ -112,8 +113,8 @@ router.post('/logout', async (req: MyRequest, res: MyResponse) => {
     })
     return send(201, 'Logged out');
   } catch (err: any) {
-    console.error(err.message)
     send(400, err.message);
+    console.error(err.message);
   }
 });
 
@@ -135,8 +136,8 @@ router.post('/check', async (req: MyRequest, res: MyResponse) => {
       return send(201, 'User session expired', { isAuthenticated: false });
     }
   } catch (err: any) {
-    console.log(err);
     send(500, err.message)
+    console.log(err);
   }
 });
 

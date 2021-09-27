@@ -17,3 +17,19 @@ export interface IUserQuizCreator {
   nickname: string | null;
   email: string | null;
 }
+
+export interface IChangeNickname {
+  nickname: string;
+}
+
+export interface IChangeEmail {
+  email: string;
+}
+
+export interface IChangePassword {
+  oldPassword: string;
+  password: string;
+  confirm: string;
+}
+
+export type profileChangeTypes = 'password' | 'email' | 'nickname';

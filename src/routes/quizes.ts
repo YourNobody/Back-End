@@ -13,12 +13,10 @@ const router = Router();
 router.get('/', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
-    console.log(req.session);
-    
     if (!req.session.user) return send(400, 'Something went wrong');
     if (req.session.token) {
       if (req.session.user) {
-        const user = await User.findOne({ email: req.session.user.email }).populate('quizes.quizId');
+        const user = await User.findById(req.session.user._id).populate('quizes.quizId');
         const quizes = user?.quizes.reduce((acc, curr) => {
           if (!curr.quizId) return acc;
           //@ts-ignore
@@ -37,6 +35,7 @@ router.get('/', async (req: MyRequest, res: MyResponse) => {
           acc.push(quiz);
           return acc;
         }, []);
+        
         return send(200, 'Your quizzes loaded successully', { quizes });
       }
     } else {
@@ -142,9 +141,7 @@ router.post('/save', async (req: MyRequest, res: MyResponse) => {
       }
 
       //@ts-ignore
-      await quiz?.update({ usersAnswers: [...quiz.usersAnswers, newAnswer] })
-
-      await quiz?.save();
+      await quiz?.updateOne({ usersAnswers: [...quiz.usersAnswers, newAnswer] })
 
       return send(200, 'Your answer have been saved');
     }
@@ -220,11 +217,9 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
       const user = await User.findById(userId);
       
       if (user) {
-        await user.update({
+        await user.updateOne({
           quizes: [...user.quizes, { quizId: questionToBD._id }]
         });
-        
-        await user.save();
       }
 
       return send(201, 'Question created successfully!');
