@@ -21,7 +21,7 @@ router.post('/', async (req: MyRequest, res: MyResponse) => {
     if (type) {
       const questions = await Question.find({ type })
       const populatedQuestions = questions.map(q => {
-        return getPopulatedObject(q, 'question type answers');
+        return getPopulatedObject(q, 'question type usersAnswers questionAnswers');
       })
 
       if (questions) {
@@ -44,17 +44,16 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
     if (!req.body) {
       throw new Error('Somerthing went wrong!');
     }
-    const { type, answers, question } = req.body;
+    const { type, questionAnswers, question, title } = req.body;
 
     if (req.session.user && req.session.isAuthenticated) {
-      console.log('DATA: ', type, question, answers, req.session.user._id);
-      const answersToBD = answers.map((answer: string) => {
+      const questionAnswersToBD = questionAnswers.map((answer: string) => {
         return {
           answer, userId: req.session.user?._id
         }
       });
       const questionToBD = new Question({
-        type, question, answers: answersToBD, userId: req.session.user?._id
+        type, title, question, questionAnswers: questionAnswersToBD, userId: req.session.user?._id
       });
 
       await questionToBD.save();

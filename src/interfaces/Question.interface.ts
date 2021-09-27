@@ -1,6 +1,6 @@
 import { Schema } from "mongoose";
 
-export interface IAnswer {
+export interface IUserAnswer {
   answer: string | number;
   userId?: Schema.Types.ObjectId; 
 }
@@ -8,7 +8,10 @@ export interface IAnswer {
 export interface IQuestion {
   question: string;
   type: QuestionTypes;
-  answers: IAnswer[];
+  title: string;
+  content?: string;
+  questionAnswers: string[];
+  usersAnswers: IUserAnswer[];
   userId: Schema.Types.ObjectId; 
 };
 
