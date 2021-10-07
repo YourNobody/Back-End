@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
       "target": "es5",
-      "module": "commonjs",
+      "module": "commonJs",
       "sourceMap": true,
       "outDir": "./build",
       "rootDir": "./src",
@@ -14,7 +14,7 @@
       "experimentalDecorators": true,
       "emitDecoratorMetadata": true,
   },
-  "lib": ["es2015"],
+
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }
