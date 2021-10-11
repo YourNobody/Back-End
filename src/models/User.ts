@@ -10,7 +10,9 @@ const UserSchema = new Schema<IUser>({
     {
       quizId: {type: Schema.Types.ObjectId, ref: refs.Quiz, required: true, unique: true}
     }
-  ]
+  ],
+  resetToken: { type: String, required: false, unique: true },
+  resetTokenExp: { type: Date, required: false }
 }, { versionKey: false });
 
 const User = model<IUser>(refs.USER, UserSchema);

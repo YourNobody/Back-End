@@ -9,6 +9,8 @@ export interface IUser {
   email: string;
   password: string;
   quizes: IUserQuizes[];
+  resetToken?: string;
+  resetTokenExp?: Date;
   _id?: Schema.Types.ObjectId;
   id?: Schema.Types.ObjectId
 };

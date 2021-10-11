@@ -1,12 +1,14 @@
 import { routes } from '../constants/routes';
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { User } from '../models/User';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
 import jwt from 'jsonwebtoken';
 import { useSend } from '../helpers/send.helper';
 import { getPopulatedObject, withoutParameter } from '../helpers/data.helper';
-import { _id } from '../constants/app';
+import { _id, QUERY_RESET_TOKEN } from '../constants/app';
+import { sendResetEmail } from '../emails/sendResetEmail';
 
 const router = Router();
 //login
@@ -136,7 +138,63 @@ router.post('/check', async (req: MyRequest, res: MyResponse) => {
       return send(201, 'User session expired', { isAuthenticated: false });
     }
   } catch (err: any) {
-    send(500, err.message)
+    send(500, err.message);
+    console.log(err);
+  }
+});
+
+router.post('/reset', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) return send(500, 'Something went wrong');
+    const { email } = req.body;
+    if (!email) return send(405, 'Eamil isn\'t provided');
+    if (email) {
+      const token = await new Promise<string | null>(res => {
+        crypto.randomBytes(32, (err, buff) => {
+          if (!err) return res(buff.toString('hex'));
+          return res(null);
+        })
+      });
+      if (!token) return send(500, 'Something went wrong with tokenization');
+
+      const user = await User.findOne({ email });
+      if (user) {
+        user.resetToken = token;
+        user.resetTokenExp = new Date(Date.now() + 1000 * 60 * 15);
+
+        await user.save();
+        try {
+          await sendResetEmail(email, token);
+          return send(201, `The email has been sent to this email ${email}`);
+        } catch (error) {
+          return send(405, 'Email sending error');
+        }
+      }
+
+      return send(404, `User with such the email doesn't exist on ${process.env.APP_NAME}`);
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.get('/reset', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.query) throw new Error('Something went wrong');
+    const resetToken = req.query[QUERY_RESET_TOKEN] as string;
+    if (!resetToken) throw new Error('No reset token. Access denied');
+
+    const user = await User.findOne({ resetToken });
+    if (!user) throw new Error('No users with this token');
+    const { resetTokenExp } = user;
+    if (resetTokenExp && Date.now() > new Date(resetTokenExp).getTime()) {
+      return send(400, 'Your reset token has expired');
+    }
+    return send(200, 'Access approved', { isAccessed: true });
+  } catch (err: any) {
+    send(500, err.message);
     console.log(err);
   }
 });
