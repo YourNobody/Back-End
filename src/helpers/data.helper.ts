@@ -1,3 +1,5 @@
+import bcrypt from 'bcrypt'
+
 export const getPopulatedObject = (obj: any, query: string) => {
   if (!obj) return {};
   if (!query) return obj;
@@ -51,3 +53,9 @@ export const withoutParameter = <T extends Record<string, unknown>>(obj: T, theR
     return obj;
   }
 };
+
+export const getHashedPassword = (password: string, salt?: string | number): string | null => {
+  if (!password) return null;
+  if (!salt) salt = 10;
+  return bcrypt.hashSync(password, salt);
+}

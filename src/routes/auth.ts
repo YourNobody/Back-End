@@ -6,7 +6,7 @@ import { User } from '../models/User';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
 import jwt from 'jsonwebtoken';
 import { useSend } from '../helpers/send.helper';
-import { getPopulatedObject, withoutParameter } from '../helpers/data.helper';
+import { getHashedPassword, getPopulatedObject, withoutParameter } from '../helpers/data.helper'
 import { _id, QUERY_RESET_TOKEN } from '../constants/app';
 import { sendResetEmail } from '../emails/sendResetEmail';
 
@@ -87,7 +87,7 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
       if (password !== confirm) {
         return send(400, 'Confirmation failed');
       }
-      const hashedPassword = bcrypt.hashSync(password, 10);
+      const hashedPassword = getHashedPassword(password, 10);
       const user = new User({
         email, nickname,
         password: hashedPassword,
@@ -146,33 +146,50 @@ router.post('/check', async (req: MyRequest, res: MyResponse) => {
 router.post('/reset', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
-    if (!req.body) return send(500, 'Something went wrong');
-    const { email } = req.body;
-    if (!email) return send(405, 'Eamil isn\'t provided');
-    if (email) {
-      const token = await new Promise<string | null>(res => {
-        crypto.randomBytes(32, (err, buff) => {
-          if (!err) return res(buff.toString('hex'));
-          return res(null);
-        })
-      });
-      if (!token) return send(500, 'Something went wrong with tokenization');
+    if (req.query && req.query[QUERY_RESET_TOKEN]) {
+      if (!req.body) throw new Error('Reset data wasn\'t provided');
+      const { password, confirm } = req.body;
+      if (!password || !confirm) throw new Error('New password or its confirmation wasn\'t provided');
+      if (password !== confirm) throw new Error('Password wan\'t confirmed');
+      const resetToken = req.query[QUERY_RESET_TOKEN] as string;
 
-      const user = await User.findOne({ email });
-      if (user) {
-        user.resetToken = token;
-        user.resetTokenExp = new Date(Date.now() + 1000 * 60 * 15);
+      const user = await User.findOne({ resetToken });
 
-        await user.save();
-        try {
-          await sendResetEmail(email, token);
-          return send(201, `The email has been sent to this email ${email}`);
-        } catch (error) {
-          return send(405, 'Email sending error');
+      const hashedPassword = getHashedPassword(password, 10);
+
+      if (user && hashedPassword) {
+        await user.updateOne({ password: hashedPassword });
+        return send(201, 'Password has been changed successfully');
+      } else throw new Error('Something went wrong');
+    } else {
+      if (!req.body) return send(500, 'Something went wrong');
+      const { email } = req.body;
+      if (!email) return send(405, 'Eamil isn\'t provided');
+      if (email) {
+        const token = await new Promise<string | null>(res => {
+          crypto.randomBytes(32, (err, buff) => {
+            if (!err) return res(buff.toString('hex'));
+            return res(null);
+          })
+        });
+        if (!token) return send(500, 'Something went wrong with tokenization');
+
+        const user = await User.findOne({ email });
+        if (user) {
+          user.resetToken = token;
+          user.resetTokenExp = new Date(Date.now() + 1000 * 60 * 15);
+
+          await user.save();
+          try {
+            await sendResetEmail(email, token);
+            return send(201, `The email has been sent to this email ${email}`);
+          } catch (error) {
+            return send(405, 'Email sending error');
+          }
         }
-      }
 
-      return send(404, `User with such the email doesn't exist on ${process.env.APP_NAME}`);
+        return send(404, `User with such the email doesn't exist on ${process.env.APP_NAME}`);
+      }
     }
   } catch (err) {
     console.log(err);
