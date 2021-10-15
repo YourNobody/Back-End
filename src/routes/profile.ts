@@ -4,6 +4,7 @@ import { useSend } from '../helpers/send.helper';
 import { IChangeEmail, IChangeNickname, IChangePassword, profileChangeTypes } from '../interfaces/User.interface';
 import { User } from '../models/User';
 import bcrypt from 'bcrypt';
+import { getHashedPassword } from '../helpers/data.helper'
 
 const router = Router();
 
@@ -55,9 +56,8 @@ router.post('/change', async (req: MyRequest, res: MyResponse) => {
             const confirmed = body.password === body.confirm;
 
             if (!confirmed) throw new Error('New password isn\'t confirmed');
-            const hashed = await bcrypt.hash(body.password, 10);
             
-            await self?.updateOne({ password: hashed });
+            await self?.updateOne({ password: getHashedPassword(body.password, 10) as string });
             return send(201, 'Password has been changed');
           } else throw new Error('Your old password entered incorrectly');
         } else {
