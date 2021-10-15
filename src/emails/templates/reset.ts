@@ -9,7 +9,7 @@ const setResetTemplate = (emailTo: string, resetToken: string) => {
       <h2>Password reset process on ${process.env.APP_NAME}</h2>
       <p>!The link below will be available only for 15 mins after sending</p>
       <p>In order to reset the password you should follow the
-        <a href=${process.env.APP_BASE_URL + `/auth/reset?` + QUERY_RESET_TOKEN + '=' + resetToken}>link</a
+        <a href=${process.env.APP_BASE_URL + '/auth/reset/' + resetToken}>link</a
        </p>
       <hr />
       <a href=${process.env.BASE_URL}>Quiz App</a>

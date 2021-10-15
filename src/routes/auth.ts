@@ -145,62 +145,69 @@ router.post('/check', async (req: MyRequest, res: MyResponse) => {
 
 router.post('/reset', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
+  console.log('begin');
   try {
-    if (req.query && req.query[QUERY_RESET_TOKEN]) {
-      if (!req.body) throw new Error('Reset data wasn\'t provided');
-      const { password, confirm } = req.body;
-      if (!password || !confirm) throw new Error('New password or its confirmation wasn\'t provided');
-      if (password !== confirm) throw new Error('Password wan\'t confirmed');
-      const resetToken = req.query[QUERY_RESET_TOKEN] as string;
+    if (!req.body) return send(500, 'Something went wrong');
+    const { email } = req.body;
+    if (!email) return send(405, 'Email isn\'t provided');
+    const token = await new Promise<string | null>(res => {
+      crypto.randomBytes(32, (err, buff) => {
+        if (!err) return res(buff.toString('hex'));
+        return res(null);
+      })
+    });
+    if (!token) return send(500, 'Something went wrong with tokenization');
 
-      const user = await User.findOne({ resetToken });
+    const user = await User.findOne({ email });
 
-      const hashedPassword = getHashedPassword(password, 10);
+    if (!user) return send(404, `User with such the email doesn't exist on ${process.env.APP_NAME}`);
 
-      if (user && hashedPassword) {
-        await user.updateOne({ password: hashedPassword });
-        return send(201, 'Password has been changed successfully');
-      } else throw new Error('Something went wrong');
-    } else {
-      if (!req.body) return send(500, 'Something went wrong');
-      const { email } = req.body;
-      if (!email) return send(405, 'Eamil isn\'t provided');
-      if (email) {
-        const token = await new Promise<string | null>(res => {
-          crypto.randomBytes(32, (err, buff) => {
-            if (!err) return res(buff.toString('hex'));
-            return res(null);
-          })
-        });
-        if (!token) return send(500, 'Something went wrong with tokenization');
+    user.resetToken = token;
+    user.resetTokenExp = new Date(Date.now() + 1000 * 60 * 15);
 
-        const user = await User.findOne({ email });
-        if (user) {
-          user.resetToken = token;
-          user.resetTokenExp = new Date(Date.now() + 1000 * 60 * 15);
-
-          await user.save();
-          try {
-            await sendResetEmail(email, token);
-            return send(201, `The email has been sent to this email ${email}`);
-          } catch (error) {
-            return send(405, 'Email sending error');
-          }
-        }
-
-        return send(404, `User with such the email doesn't exist on ${process.env.APP_NAME}`);
-      }
+    await user.save();
+    try {
+      console.log('here');
+      await sendResetEmail(email, token);
+      console.log('mmmm');
+      return send(201, `The email has been sent to this email ${email}`);
+    } catch (error) {
+      return send(405, 'Email sending error');
     }
-  } catch (err) {
-    console.log(err);
+  } catch (e: any) {
+    console.log(e);
+    send(500, e.message);
   }
 });
 
-router.get('/reset', async (req: MyRequest, res: MyResponse) => {
+router.post('/reset/:resetToken', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
-    if (!req.query) throw new Error('Something went wrong');
-    const resetToken = req.query[QUERY_RESET_TOKEN] as string;
+    if (!req.body) throw new Error('Reset data wasn\'t provided');
+    const { password, confirm } = req.body;
+    if (!password || !confirm) throw new Error('New password or its confirmation wasn\'t provided');
+    if (password !== confirm) throw new Error('Password wan\'t confirmed');
+    const resetToken = req.params.resetToken as string;
+
+    const user = await User.findOne({ resetToken });
+
+    const hashedPassword = getHashedPassword(password, 10);
+
+    if (user && hashedPassword) {
+      await user.updateOne({ password: hashedPassword });
+      return send(201, 'Password has been changed successfully');
+    } else throw new Error('Something went wrong');
+  } catch (err: any) {
+    console.log(err);
+    send(500, err.message);
+  }
+});
+
+router.get('/reset/:resetToken', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.params) throw new Error('Something went wrong');
+    const resetToken = req.params.resetToken as string;
     if (!resetToken) throw new Error('No reset token. Access denied');
 
     const user = await User.findOne({ resetToken });
