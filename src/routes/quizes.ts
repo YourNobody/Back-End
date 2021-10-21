@@ -17,7 +17,7 @@ router.get('/', async (req: MyRequest, res: MyResponse) => {
     if (req.session.token) {
       if (req.session.user) {
         const user = await User.findById(req.session.user._id).populate('quizes.quizId');
-        const quizes = user?.quizes.reduce((acc, curr) => {
+        const quizzes = user?.quizes.reduce((acc, curr) => {
           if (!curr.quizId) return acc;
           //@ts-ignore
           const quiz: IQuiz = withoutParameter({...curr.quizId._doc}, '_id', 'id');
@@ -36,7 +36,7 @@ router.get('/', async (req: MyRequest, res: MyResponse) => {
           return acc;
         }, []);
         
-        return send(200, 'Your quizzes loaded successully', { quizes });
+        return send(200, 'Your quizzes loaded successully', { quizzes });
       }
     } else {
       return send(400, 'User isn\'t authenticated');
@@ -124,7 +124,7 @@ router.post('/save', async (req: MyRequest, res: MyResponse) => {
     if (!req.body) throw new Error('Something went wrong');
 
     const { quizId, quizAnswerId } = req.body;
-
+    console.log(quizId, quizAnswerId);
     if (quizId) {
       const quiz = await Quiz.findById(quizId);
       const quizAnswer = quiz?.quizAnswers.find(qa => qa._id?.toString() === quizAnswerId.toString());
@@ -144,9 +144,9 @@ router.post('/save', async (req: MyRequest, res: MyResponse) => {
       await quiz?.updateOne({ usersAnswers: [...quiz.usersAnswers, newAnswer] })
 
       return send(200, 'Your answer have been saved');
+    } else {
+      throw new Error('No Quiz ID');
     }
-
-    throw new Error('Something went wrong'); 
   } catch (err: any) {
     console.error(err);
     send(500, err.messsage);
@@ -160,7 +160,7 @@ router.post('/', async (req: MyRequest, res: MyResponse) => {
     if (!req.body) {
       throw new Error('Something went wrong');
     }
-    const { type } = req.body;
+    const type = req.body?.type?.toLowerCase();
 
     if (type) {
       const allQuizes = await Quiz.find({ type }).populate('userId');
