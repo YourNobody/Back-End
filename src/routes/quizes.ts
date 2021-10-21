@@ -5,9 +5,9 @@ import { useSend } from '../helpers/send.helper';
 import { getPopulatedObject, withoutParameter } from '../helpers/data.helper';
 import { Quiz } from '../models/Quiz';
 import { quizesNames, __v, _id } from './../constants/app';
-import { IQuiz, IQuizStatistic } from 'interfaces/Quiz.interface';
+import { IQuiz, IQuizStatistic, QuizesTypes } from '../interfaces/Quiz.interface'
 import { Schema } from 'mongoose';
-import { IUserQuizCreator } from 'interfaces/User.interface';
+import { IUserQuizCreator } from '../interfaces/User.interface';
 const router = Router();
 
 router.get('/', async (req: MyRequest, res: MyResponse) => {
@@ -98,11 +98,11 @@ router.get('/statistics', async (req: MyRequest, res: MyResponse) => {
           const stat = stats[UA?.quizAnswerId?.toString()];
           if (!stat) continue;
           stat.amount++;
-          if (UA.isAnonimous) {
-            stat.users.push({ isAnonimous: true, nickname: null, email: null });
+          if (UA.userId) {
+            stat.users.push({ isAnonymous: true, nickname: null, email: null });
           } else {
             //@ts-ignore
-            stat.users.push({ isAnonimous: false, nickname: UA.userId?.nickname || null, email: UA.userId?.email || null})
+            stat.users.push({ isAnonymous: false, nickname: UA.userId?.nickname || null, email: UA.userId?.email || null})
           }
         }
   
@@ -123,30 +123,86 @@ router.post('/save', async (req: MyRequest, res: MyResponse) => {
   try {
     if (!req.body) throw new Error('Something went wrong');
 
-    const { quizId, quizAnswerId } = req.body;
-    console.log(quizId, quizAnswerId);
-    if (quizId) {
-      const quiz = await Quiz.findById(quizId);
-      const quizAnswer = quiz?.quizAnswers.find(qa => qa._id?.toString() === quizAnswerId.toString());
-      const newAnswer = { answer: quizAnswer?.answer, quizAnswerId: quizAnswer?._id } as {
-        answer: string; quizAnswerId: Schema.Types.ObjectId, userId: Schema.Types.ObjectId | null; isAnonimous: boolean;
-      };
+    const { quizId, quizAnswerId, answer, type } = req.body;
 
-      if (!req.session?.user?._id) {
-        newAnswer.userId = null;
-        newAnswer.isAnonimous = true;
-      } else {
-        newAnswer.userId = req.session.user._id;
-        newAnswer.isAnonimous = false;
+    if (!quizId) throw new Error('Id of the Quiz wan\'t provided');
+
+    const quiz = await Quiz.findById(quizId);
+
+    if (!quiz) throw new Error('Something went wrong');
+
+    switch (type.toUpperCase()) {
+      case QuizesTypes.SA: {
+        if (!quizAnswerId) throw new Error('Quiz Answer ID wasn\'t provided');
+
+        const userAnswer = quiz.usersAnswers.find(qa => qa.userId?.toString() === req.session?.user?._id.toString());
+        const quizAnswer = quiz.quizAnswers.find(qa => qa._id?.toString() === quizAnswerId.toString());
+
+        if (!quizAnswer) throw new Error('No such answer on this Quiz');
+
+        if (!!userAnswer && req.session?.user) {
+          const index = quiz.usersAnswers.findIndex(qa => qa._id?.toString() === quizAnswerId.toString());
+          const updated = [
+            ...quiz.quizAnswers.slice(0, index),
+            {
+              ...userAnswer,
+              answer: quizAnswer.answer,
+              quizAnswerId,
+            },
+            ...quiz.quizAnswers.slice(index + 1),
+          ];
+
+          await quiz.updateOne({ usersAnswers: updated });
+
+          return send(201, 'Your previous answer has been updated');
+        } else {
+          const newAnswer = {
+            quizAnswerId,
+            answer: quizAnswer.answer,
+          } as any;
+          if (req.session?.user && req.session?.user._id) {
+            newAnswer.userId = req.session.user._id;
+          }
+
+          await quiz.updateOne({ usersAnswers: [...quiz.usersAnswers, newAnswer] })
+
+          return send(201, 'Your answer has been added');
+        }
       }
+      case QuizesTypes.TA: {
 
-      //@ts-ignore
-      await quiz?.updateOne({ usersAnswers: [...quiz.usersAnswers, newAnswer] })
+      }
+      case QuizesTypes.RA: {
 
-      return send(200, 'Your answer have been saved');
-    } else {
-      throw new Error('No Quiz ID');
+      }
+      case QuizesTypes.AB: {
+
+      }
+      default: throw new Error('Quiz type wasn\'t provided or can\'t be processed');
     }
+
+    // if (quizId) {
+    //   const quiz = await Quiz.findById(quizId);
+    //   const quizAnswer = quiz?.quizAnswers.find(qa => qa._id?.toString() === quizAnswerId.toString());
+    //   const newAnswer = { answer: quizAnswer?.answer, quizAnswerId: quizAnswer?._id } as {
+    //     answer: string; quizAnswerId: Schema.Types.ObjectId, userId: Schema.Types.ObjectId | null; isAnonimous: boolean;
+    //   };
+    //
+    //   if (!req.session?.user?._id) {
+    //     newAnswer.userId = null;
+    //     newAnswer.isAnonimous = true;
+    //   } else {
+    //     newAnswer.userId = req.session.user._id;
+    //     newAnswer.isAnonimous = false;
+    //   }
+    //
+    //   //@ts-ignore
+    //   await quiz?.updateOne({ usersAnswers: [...quiz.usersAnswers, newAnswer] })
+    //
+    //   return send(200, 'Your answer have been saved');
+    // } else {
+    //   throw new Error('No Quiz ID');
+    // }
   } catch (err: any) {
     console.error(err);
     send(500, err.messsage);
@@ -204,9 +260,9 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
 
       const { _id: userId } = req.session.user._id;
 
-      const quizAnswersToBD = quizAnswers.map((answer: string) => {
+      const quizAnswersToBD = quizAnswers ? quizAnswers.map((answer: string) => {
         return { answer };
-      });
+      }) : null;
 
       const questionToBD = new Quiz({
         type, content, question, quizAnswers: quizAnswersToBD, userId: req.session.user?._id, title, usersAnswers: []

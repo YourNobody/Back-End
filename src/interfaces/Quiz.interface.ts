@@ -2,10 +2,12 @@ import { Schema } from "mongoose";
 
 export interface IUserAnswer {
   answer: string | number;
-  userId?: Schema.Types.ObjectId; 
-  isAnonimous?: boolean;
+  userId?: Schema.Types.ObjectId;
   _id?: Schema.Types.ObjectId;
   id?: Schema.Types.ObjectId;
+  createdAt?: Date,
+  updatedAt?: Date,
+  quizAnswerId?: Schema.Types.ObjectId
 }
 
 export interface IQuizAnswer {
@@ -31,8 +33,8 @@ export interface IQuizStatistic {
   users: Array<{
     nickname: string | null;
     email: string | null;
-    isAnonimous: boolean;
-  }>  
+    isAnonymous: boolean;
+  }>
 }
 
 export enum QuizesTypes {

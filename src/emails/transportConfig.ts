@@ -9,7 +9,7 @@ void async function() {
   try {
     accessToken = await oAuth2Client.getAccessToken();
   } catch (err) {
-    console.error(err);
+    // console.error(err);
   }
 }()
 
