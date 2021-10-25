@@ -4,7 +4,8 @@ import { useSend } from '../helpers/send.helper';
 import { IChangeEmail, IChangeNickname, IChangePassword, profileChangeTypes } from '../interfaces/User.interface';
 import { User } from '../models/User';
 import bcrypt from 'bcrypt';
-import { getHashedPassword } from '../helpers/data.helper'
+import { getHashedPassword, withoutParameter } from '../helpers/data.helper'
+import { _id } from '../constants/app'
 
 const router = Router();
 
@@ -14,12 +15,13 @@ router.post('/change', async (req: MyRequest, res: MyResponse) => {
     if (!req.body) throw new Error('Something went wrong');
 
     const args = req.body;
-    
+
     if (!args.key) throw new Error('Key wan\'t provided');
     
     let body = null;
     if (!req.session.token && !req.session.user) throw new Error('User isn\'t authenticated');
     const self = await User.findById(req.session.user?._id);
+    let message: string;
     switch(args.key as profileChangeTypes) {
       case 'email': {
         body = {
@@ -30,7 +32,8 @@ router.post('/change', async (req: MyRequest, res: MyResponse) => {
         if (candidates.length) throw new Error('User with such the email already exists');
 
         await self?.updateOne({ email: body.email });
-        return send(201, 'Email has been changed');
+        message = 'Email has been changed';
+        break;
       }
       case 'nickname': {
         body = {
@@ -41,7 +44,8 @@ router.post('/change', async (req: MyRequest, res: MyResponse) => {
         if (candidates.length) throw new Error('User with such the nickname already exists');
 
         await self?.updateOne({ nickname: body.nickname });
-        return send(201, 'Nickname has been changed');
+        message = 'Nickname has been changed';
+        break;
       }
       case 'password': {
         body = {
@@ -58,14 +62,20 @@ router.post('/change', async (req: MyRequest, res: MyResponse) => {
             if (!confirmed) throw new Error('New password isn\'t confirmed');
             
             await self?.updateOne({ password: getHashedPassword(body.password, 10) as string });
-            return send(201, 'Password has been changed');
+            message = 'Password has been changed';
           } else throw new Error('Your old password entered incorrectly');
         } else {
           throw new Error('Something went wrong');
         }
+        break;
       }
-      default: throw new Error('Something wan\'t provided');
+      default: throw new Error('Something wasn\'t provided');
     }
+    if (message) return send(201, message, {
+      // @ts-ignore
+      user: withoutParameter(withoutParameter({...self?._doc}, 'password'), _id, 'id'),
+      token: req.session.token
+    });
   } catch (err: any) {
     send(500, err.message);
     console.log(err);

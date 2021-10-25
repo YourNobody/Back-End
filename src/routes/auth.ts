@@ -167,9 +167,7 @@ router.post('/reset', async (req: MyRequest, res: MyResponse) => {
 
     await user.save();
     try {
-      console.log('here');
       await sendResetEmail(email, token);
-      console.log('mmmm');
       return send(201, `The email has been sent to this email ${email}`);
     } catch (error) {
       return send(405, 'Email sending error');

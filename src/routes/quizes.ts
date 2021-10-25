@@ -250,13 +250,13 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
     if (!req.body) {
       throw new Error('Somerthing went wrong!');
     }
-    
+
     const { type, quizAnswers, title, question, content } = req.body;
 
-    if (req.session.user && req.session.token && req.headers.authorization) {
-      if (req.session.token !== req.headers.authorization) {
-        return send(400, 'Authorization failed')
-      }
+    if (req.session.user && req.session.token) {
+   //   if (req.session.token !== req.headers.authorization) {
+   //     return send(400, 'Authorization failed')
+   //   }
 
       const { _id: userId } = req.session.user._id;
 
@@ -271,7 +271,7 @@ router.post('/create', async (req: MyRequest, res: MyResponse) => {
       await questionToBD.save();
 
       const user = await User.findById(userId);
-      
+
       if (user) {
         await user.updateOne({
           quizes: [...user.quizes, { quizId: questionToBD._id }]
