@@ -11,7 +11,12 @@ export const quizesNames = {
 export const __v = '__v';
 export const _id = '_id';
 
-export const QUERY_RESET_TOKEN = 'reset_token'
+export const QUERY_RESET_TOKEN = 'reset_token';
+
+export const SUBSCRIPTION = {
+  price: 19.99,
+  currency: 'USD'
+};
 
 // export const firebaseConfig = {
 //   apiKey: process.env.FIREBASE_API_KEY,

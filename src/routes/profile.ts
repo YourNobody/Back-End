@@ -4,10 +4,14 @@ import { useSend } from '../helpers/send.helper';
 import { IChangeEmail, IChangeNickname, IChangePassword, profileChangeTypes } from '../interfaces/User.interface';
 import { User } from '../models/User';
 import bcrypt from 'bcrypt';
-import { getHashedPassword, withoutParameter } from '../helpers/data.helper'
-import { _id } from '../constants/app'
+import { getHashedPassword, withoutParameter } from '../helpers/data.helper';
+import { _id, SUBSCRIPTION } from '../constants/app'
+import Stripe from 'stripe';
 
 const router = Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+  apiVersion: '2020-08-27'
+});
 
 router.post('/change', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
@@ -79,6 +83,31 @@ router.post('/change', async (req: MyRequest, res: MyResponse) => {
   } catch (err: any) {
     send(500, err.message);
     console.log(err);
+  }
+});
+
+router.post('/payment', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) throw new Error('Something went wrong');
+    const { id, email } = req.body;
+
+    const payment = await stripe.paymentIntents.create({
+      amount: SUBSCRIPTION.price,
+      currency: SUBSCRIPTION.currency,
+      description: 'Subscription',
+      payment_method: id,
+      receipt_email: email,
+      confirm: true
+    });
+
+    if (!payment) throw new Error('Payment Unsuccessful');
+
+    return send(201, 'Payment Successful', { success: true })
+
+  } catch (e) {
+    console.log(e.message);
+    send(500, e.message, { success: false });
   }
 });
 
