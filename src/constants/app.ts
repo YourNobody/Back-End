@@ -14,7 +14,7 @@ export const _id = '_id';
 export const QUERY_RESET_TOKEN = 'reset_token';
 
 export const SUBSCRIPTION = {
-  price: 19.99,
+  price: 1999,
   currency: 'USD'
 };
 

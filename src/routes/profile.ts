@@ -86,24 +86,35 @@ router.post('/change', async (req: MyRequest, res: MyResponse) => {
   }
 });
 
-router.post('/payment', async (req: MyRequest, res: MyResponse) => {
+router.post('/payment/sub', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
     if (!req.body) throw new Error('Something went wrong');
-    const { id, email } = req.body;
+    const {email, payment_method} = req.body;
 
-    const payment = await stripe.paymentIntents.create({
-      amount: SUBSCRIPTION.price,
-      currency: SUBSCRIPTION.currency,
-      description: 'Subscription',
-      payment_method: id,
-      receipt_email: email,
-      confirm: true
+    const customer = await stripe.customers.create({
+      payment_method: payment_method,
+      email: email,
+      invoice_settings: {
+        default_payment_method: payment_method,
+      },
     });
 
-    if (!payment) throw new Error('Payment Unsuccessful');
+    if (!customer) throw new Error('Something went wrong with the payment. Try later');
 
-    return send(201, 'Payment Successful', { success: true })
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [{plan: 'plan_G......'}],
+      expand: ['latest_invoice.payment_intent']
+    });
+    //@ts-ignore
+    if (!subscription || !subscription.latest_invoice || subscription.latest_invoice.payment_intent) throw new Error('Something went wrong with creating your subscription. Try later');
+    else {
+      //@ts-ignore
+      const { status, client_secret } = subscription.latest_invoice.payment_intent;
+
+      return send(201, 'Client secret token created successfully', { client_secret, status });
+    }
 
   } catch (e) {
     console.log(e.message);
