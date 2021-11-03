@@ -14,8 +14,7 @@ export const _id = '_id';
 export const QUERY_RESET_TOKEN = 'reset_token';
 
 export const SUBSCRIPTION = {
-  price: 1999,
-  currency: 'USD'
+  priceId: 'price_1JrVl1HGtSgh6m0CtuM9Y615'
 };
 
 // export const firebaseConfig = {

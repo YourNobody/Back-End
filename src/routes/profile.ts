@@ -86,6 +86,35 @@ router.post('/change', async (req: MyRequest, res: MyResponse) => {
   }
 });
 
+router.get('/payment/sub', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) throw new Error('Something went wrong');
+
+    const allPrices = await stripe.prices.list({ active: true });
+    let productsPromises = [];
+    for (const priceData of allPrices?.data) {
+      productsPromises.push(new Promise(
+        res => res(stripe.products.retrieve(priceData.product as string))
+      ));
+    }
+
+    const products = await Promise.all(productsPromises).then(prods => prods.reduce((acc: any[], prod: any, index, array) => {
+      if (!prod.active) return acc;
+      const priceOfTheProduct = allPrices.data.find(price => price.product === prod.id);
+      if (!priceOfTheProduct) return acc;
+      prod.price = priceOfTheProduct;
+      acc.push(prod);
+      return acc;
+    }, []));
+
+    return send(200, 'Subscription products added', { products });
+  } catch (e) {
+    console.log(e.message);
+    send(500, e.message, { success: false });
+  }
+});
+
 router.post('/payment/sub', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
@@ -107,15 +136,33 @@ router.post('/payment/sub', async (req: MyRequest, res: MyResponse) => {
       items: [{price: 'price_1JrVl1HGtSgh6m0CtuM9Y615'}],
       expand: ['latest_invoice.payment_intent']
     });
-    const all = await stripe.prices.list();
-    return send(500, '', {all})
+    // const allPrices = await stripe.prices.list({ active: true });
+    // let productsPromises = [];
+    // for (const priceData of allPrices?.data) {
+    //   productsPromises.push(new Promise(
+    //     res => res(stripe.products.retrieve(priceData.product as string))
+    //   ));
+    // }
+    // const products = await Promise.all(productsPromises).then(prods => prods.reduce((acc: any[], prod: any, index, array) => {
+    //   if (!prod.active) return acc;
+    //   const priceOfTheProduct = allPrices.data.find(price => price.product === prod.id);
+    //   if (!priceOfTheProduct) return acc;
+    //   prod.price = priceOfTheProduct;
+    //   acc.push(prod);
+    //   return acc;
+    // }, []));
+
     if (!subscription) throw new Error('Something went wrong with creating your subscription. Try later');
     else {
       //@ts-ignore
       const { plan: { status, interval, amount } } = subscription;
 
       return send(201, 'Client secret token created successfully', {
-        status, interval, amount, success: status === 'active'
+        amount,
+        //@ts-ignore
+        clientSecret: subscription?.latest_invoice?.payment_intent?.client_secret,
+        //@ts-ignore
+        status: subscription?.latest_invoice?.payment_intent?.status
       });
     }
 
