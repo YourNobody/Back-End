@@ -104,16 +104,19 @@ router.post('/payment/sub', async (req: MyRequest, res: MyResponse) => {
 
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [{plan: 'plan_G......'}],
+      items: [{price: 'price_1JrVl1HGtSgh6m0CtuM9Y615'}],
       expand: ['latest_invoice.payment_intent']
     });
-    //@ts-ignore
-    if (!subscription || !subscription.latest_invoice || subscription.latest_invoice.payment_intent) throw new Error('Something went wrong with creating your subscription. Try later');
+    const all = await stripe.prices.list();
+    return send(500, '', {all})
+    if (!subscription) throw new Error('Something went wrong with creating your subscription. Try later');
     else {
       //@ts-ignore
-      const { status, client_secret } = subscription.latest_invoice.payment_intent;
+      const { plan: { status, interval, amount } } = subscription;
 
-      return send(201, 'Client secret token created successfully', { client_secret, status });
+      return send(201, 'Client secret token created successfully', {
+        status, interval, amount, success: status === 'active'
+      });
     }
 
   } catch (e) {
