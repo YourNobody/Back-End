@@ -99,7 +99,7 @@ router.get('/payment/sub', async (req: MyRequest, res: MyResponse) => {
       ));
     }
 
-    const products = await Promise.all(productsPromises).then(prods => prods.reduce((acc: any[], prod: any, index, array) => {
+    const subscriptions = await Promise.all(productsPromises).then(prods => prods.reduce((acc: any[], prod: any, index, array) => {
       if (!prod.active) return acc;
       const priceOfTheProduct = allPrices.data.find(price => price.product === prod.id);
       if (!priceOfTheProduct) return acc;
@@ -108,7 +108,7 @@ router.get('/payment/sub', async (req: MyRequest, res: MyResponse) => {
       return acc;
     }, []));
 
-    return send(200, 'Subscription products added', { products });
+    return send(200, 'Subscriptions have been got', { subscriptions });
   } catch (e) {
     console.log(e.message);
     send(500, e.message, { success: false });
@@ -136,39 +136,41 @@ router.post('/payment/sub', async (req: MyRequest, res: MyResponse) => {
       items: [{price: 'price_1JrVl1HGtSgh6m0CtuM9Y615'}],
       expand: ['latest_invoice.payment_intent']
     });
-    // const allPrices = await stripe.prices.list({ active: true });
-    // let productsPromises = [];
-    // for (const priceData of allPrices?.data) {
-    //   productsPromises.push(new Promise(
-    //     res => res(stripe.products.retrieve(priceData.product as string))
-    //   ));
-    // }
-    // const products = await Promise.all(productsPromises).then(prods => prods.reduce((acc: any[], prod: any, index, array) => {
-    //   if (!prod.active) return acc;
-    //   const priceOfTheProduct = allPrices.data.find(price => price.product === prod.id);
-    //   if (!priceOfTheProduct) return acc;
-    //   prod.price = priceOfTheProduct;
-    //   acc.push(prod);
-    //   return acc;
-    // }, []));
 
     if (!subscription) throw new Error('Something went wrong with creating your subscription. Try later');
     else {
-      //@ts-ignore
-      const { plan: { status, interval, amount } } = subscription;
-
       return send(201, 'Client secret token created successfully', {
-        amount,
         //@ts-ignore
-        clientSecret: subscription?.latest_invoice?.payment_intent?.client_secret,
+        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
         //@ts-ignore
-        status: subscription?.latest_invoice?.payment_intent?.status
+        status: subscription.latest_invoice?.payment_intent?.status,
+        id: subscription.id
       });
     }
 
   } catch (e) {
     console.log(e.message);
     send(500, e.message, { success: false });
+  }
+});
+
+router.post('/payment/sub/confirm', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) throw new Error('Something went wrong');
+    const { id } = req.body;
+    if (!req.session.user) throw new Error('Please authorize to subscribe');
+    const exist = req.session.user?.mySubscriptions?.find(subId => subId === id);
+    if (exist) {
+      throw new Error('You already have this subscription');
+    } else {
+      const subs = [...req.session.user?.mySubscriptions as Array<string>, ...id];
+      await req.session.user.updateOne({ mySubscriptions:  subs});
+      return send(201, 'Subscription confirmed', { confirmed: true, subscriptions: subs });
+    }
+  } catch (e: any) {
+    console.log(e);
+    send(500, e.message, { confirmed: false });
   }
 });
 
