@@ -26,7 +26,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
 
       if (isSame) {
         req.session.user = candidate;
-        
+        const { password, email, nickname, _id: id } = candidate;
         const token = jwt.sign({
           userId: candidate?._id,
           expiresIn: 1000 * 60 * 60,
@@ -44,7 +44,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
           return send(201, '', {
             token,
             //@ts-ignore
-            user: withoutParameter(withoutParameter({...candidate._doc}, 'password'), _id, 'id'),
+            user: { password, nickname, email, id },
             message: 'Successful Log In',
           })
         })

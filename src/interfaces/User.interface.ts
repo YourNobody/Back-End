@@ -11,7 +11,7 @@ export interface IUser {
   quizes: IUserQuizes[];
   resetToken?: string;
   resetTokenExp?: Date;
-  mySubscriptions?: string[];
+  subscription?: any;
   _id?: Schema.Types.ObjectId;
   id?: Schema.Types.ObjectId
 };
