@@ -13,7 +13,9 @@ const UserSchema = new Schema<IUser>({
   ],
   resetToken: { type: String, required: false, unique: true },
   resetTokenExp: { type: Date, required: false },
-  subscription: { type: Object, required: false }
+  subscriptions: [
+    { type: String, required: false, unique: true }
+  ]
 }, { versionKey: false });
 
 const User = model<IUser>(refs.USER, UserSchema);

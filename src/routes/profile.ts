@@ -96,7 +96,6 @@ router.get('/payment/sub', async (req: MyRequest, res: MyResponse) => {
         res => res(stripe.products.retrieve(priceData.product as string))
       ));
     }
-
     const subs = await stripe.subscriptions.list();
     const products = await Promise.all(productsPromises).then(prods => prods.reduce((acc: any[], prod: any, index, array) => {
       if (!prod.active) return acc;
@@ -106,19 +105,22 @@ router.get('/payment/sub', async (req: MyRequest, res: MyResponse) => {
       acc.push(prod);
       return acc;
     }, []));
-
     if (req.session.user) {
-      const user = await User.findOne(req.session.user.id);
-      if (user && user.subscription && subs.data.find(sub => sub.id === user.subscription.id)) {
-        const userSub = subs.data.find(sub => sub.id === user.subscription.id);
-        if (userSub && userSub.cancel_at_period_end !== user.subscription.cancel_at_period_end) {
-          await user.updateOne({ subscription: userSub });
+      const user = await User.findById(req.session.user._id);
+      if (!user) throw new Error('Something went wrong with the session');
+      const userSubs = subs.data.filter((sub: any) => {
+        for (let subId of user.subscriptions) {
+          if (sub.id === subId) {
+            sub.active = !sub.cancel_at_period_end;
+            if (sub.status === 'canceled') sub.active = false;
+            return true;
+          }
         }
-        return send(200, 'Subscriptions have been got', { subscriptions: products, userSubscription: user.subscription });
-      }
+      });
+      return send(200, 'Subscriptions have been got', { subscriptions: products, userSubscriptions: userSubs || [] });
     }
 
-    return send(200, 'Subscriptions have been got', { subscriptions: products, userSubscription: null });
+    return send(200, 'Subscriptions have been got', { subscriptions: products, userSubscriptions: [] });
   } catch (e) {
     console.log(e.message);
     send(500, e.message, { success: false });
@@ -166,23 +168,84 @@ router.post('/payment/sub', async (req: MyRequest, res: MyResponse) => {
 
 router.post('/payment/sub/confirm', async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
+
+  const helper = async (iterable: any[], ) => {
+    let subs = [];
+    for (let s of iterable) {
+      subs.push(new Promise(res => res(stripe.subscriptions.retrieve(s.id))));
+    }
+    return await Promise.all(subs);
+  }
   try {
     if (!req.body) throw new Error('Something went wrong');
     const { id } = req.body;
     if (!req.session.user) throw new Error('Please authorize to subscribe');
-    const exist = req.session.user?.subscription?.id === id;
+    const user = await User.findById(req.session.user._id);
+    if (!user) throw new Error('Something went wrong with the session');
+    const exist = user.subscriptions.find((sub: any) => sub.id === id);
     if (exist) {
-      return send(201, 'You already have this subscription', { subscription: req.session.user?.subscription });
+      const userSubs = await helper(user.subscriptions);
+      return send(201, 'You already have this subscription', { subscription: userSubs});
     } else {
       const sub = await stripe.subscriptions.retrieve(id);
       if (!sub) throw new Error('Something went wrong with this subscription. Try later');
-      const user = await User.findOne(req.session.user.id);
-      await user?.updateOne({ subscription: sub});
-      return send(201, 'Subscription confirmed', { confirmed: true, subscription: sub });
+      await user?.updateOne({ subscriptions: [...user.subscriptions, sub.id]});
+      const userSubs = await helper(user.subscriptions);
+      return send(201, 'Subscription confirmed', { confirmed: true, subscriptions: userSubs });
     }
   } catch (e: any) {
     console.log(e);
     send(500, e.message, { confirmed: false });
+  }
+});
+
+router.post('/payment/sub/check', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) throw new Error('Something went wrong');
+    const { ids } = req.body;
+    if (!ids || !(ids instanceof Array)) throw new Error('Subscriptions ids weren\'t provided');
+
+    let subscriptions = [];
+    for (const subId of ids) {
+      subscriptions.push(new Promise(res => {
+        res(stripe.subscriptions.retrieve(subId));
+      }));
+    }
+    subscriptions = await Promise.all(subscriptions);
+
+    const mapped = subscriptions.map((sub: any) => {
+      sub.active = !sub.cancel_at_period_end;
+      if (sub.status === 'canceled') sub.active = false;
+      return sub;
+    })
+    return send(201, 'Subscriptions with statuses were got', { subscriptions: mapped });
+  } catch (e: any) {
+    console.log(e);
+    send(500, e.message);
+  }
+});
+
+router.post('/payment/sub/cancel', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) throw new Error('Something went wrong');
+    const { id } = req.body;
+
+    if (!req.session.user) throw new Error('Something went wrong with the session');
+    const user = await User.findById(req.session.user._id);
+    if (!user) throw new Error('Something went wrong');
+
+    const deleted = await stripe.subscriptions.del(id);
+    if (deleted && deleted.id === id) {
+      const index = user.subscriptions.find((sub: any) => sub.id === deleted.id);
+      const subs = [...user.subscriptions.slice(0, index), ...user.subscriptions.slice(index)]
+      await user.updateOne({ subscriptions: subs })
+      return send(201, 'Your subscription was cancel successfully', { deleted, subscriptions: subs });
+    }
+  } catch (e: any) {
+    console.log(e);
+    send(500, e.message);
   }
 });
 
