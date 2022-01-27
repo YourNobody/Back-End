@@ -11,11 +11,13 @@ import helmet from 'helmet';
 import { authRoutes, profileRoutes, quizesRoutes } from './routes/routes';
 
 try {
+  const MONGO_URI = <string>process.env.MONGODB_URI;
+  const SESSION_SECRET = <string>process.env.SESSION_SECRET;
   const app: Application = express();
   const MongoDBStoreSessioned = MongoDBStore(session);
 
   const store = new MongoDBStoreSessioned({
-    uri: process.env.MONGODB_URI as string,
+    uri: MONGO_URI,
     collection: 'sessions'
   })
 
@@ -25,7 +27,7 @@ try {
   app.use(express.json());
 
   app.use(session({
-    secret: process.env.SESSION_SECRET as string,
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store
@@ -37,7 +39,7 @@ try {
 
   void async function() {
     try {
-      await mongoose.connect(process.env.MONGODB_URI as string, {
+      await mongoose.connect(MONGO_URI, {
       })
       app.listen(process.env.PORT, () => {
         console.log('Server is running on port ' + process.env.PORT)
