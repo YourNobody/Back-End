@@ -16,7 +16,6 @@ const QuizSchema = new Schema<IQuiz>({
     {
       answer: { type: String, required: true },
       userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: false },
-      isAnonimous: { type: Boolean, required: false },
       quizAnswerId: { type: Schema.Types.ObjectId, required: true },
       createdAt: { type: Date, required: true, default: Date.now}
     }

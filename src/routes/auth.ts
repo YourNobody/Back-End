@@ -1,12 +1,14 @@
 import { routes } from '../constants/routes';
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { User } from '../models/User';
 import { MyRequest, MyResponse } from '../interfaces/express.interface';
 import jwt from 'jsonwebtoken';
 import { useSend } from '../helpers/send.helper';
-import { getPopulatedObject, withoutParameter } from '../helpers/data.helper';
-import { _id } from '../constants/app';
+import { getHashedPassword, getPopulatedObject, withoutParameter } from '../helpers/data.helper'
+import { _id, QUERY_RESET_TOKEN } from '../constants/app';
+import { sendResetEmail } from '../emails/sendResetEmail';
 
 const router = Router();
 //login
@@ -24,7 +26,6 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
 
       if (isSame) {
         req.session.user = candidate;
-        
         const token = jwt.sign({
           userId: candidate?._id,
           expiresIn: 1000 * 60 * 60,
@@ -85,7 +86,7 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
       if (password !== confirm) {
         return send(400, 'Confirmation failed');
       }
-      const hashedPassword = bcrypt.hashSync(password, 10);
+      const hashedPassword = getHashedPassword(password, 10);
       const user = new User({
         email, nickname,
         password: hashedPassword,
@@ -136,7 +137,85 @@ router.post('/check', async (req: MyRequest, res: MyResponse) => {
       return send(201, 'User session expired', { isAuthenticated: false });
     }
   } catch (err: any) {
-    send(500, err.message)
+    send(500, err.message);
+    console.log(err);
+  }
+});
+
+router.post('/reset', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  console.log('begin');
+  try {
+    if (!req.body) return send(500, 'Something went wrong');
+    const { email } = req.body;
+    if (!email) return send(405, 'Email isn\'t provided');
+    const token = await new Promise<string | null>(res => {
+      crypto.randomBytes(32, (err, buff) => {
+        if (!err) return res(buff.toString('hex'));
+        return res(null);
+      })
+    });
+    if (!token) return send(500, 'Something went wrong with tokenization');
+
+    const user = await User.findOne({ email });
+
+    if (!user) return send(404, `User with such the email doesn't exist on ${process.env.APP_NAME}`);
+
+    user.resetToken = token;
+    user.resetTokenExp = new Date(Date.now() + 1000 * 60 * 15);
+
+    await user.save();
+    try {
+      await sendResetEmail(email, token);
+      return send(201, `The email has been sent to this email ${email}`);
+    } catch (error) {
+      return send(405, 'Email sending error');
+    }
+  } catch (e: any) {
+    console.log(e);
+    send(500, e.message);
+  }
+});
+
+router.post('/reset/:resetToken', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.body) throw new Error('Reset data wasn\'t provided');
+    const { password, confirm } = req.body;
+    if (!password || !confirm) throw new Error('New password or its confirmation wasn\'t provided');
+    if (password !== confirm) throw new Error('Password wan\'t confirmed');
+    const resetToken = req.params.resetToken as string;
+
+    const user = await User.findOne({ resetToken });
+
+    const hashedPassword = getHashedPassword(password, 10);
+
+    if (user && hashedPassword) {
+      await user.updateOne({ password: hashedPassword });
+      return send(201, 'Password has been changed successfully');
+    } else throw new Error('Something went wrong');
+  } catch (err: any) {
+    console.log(err);
+    send(500, err.message);
+  }
+});
+
+router.get('/reset/:resetToken', async (req: MyRequest, res: MyResponse) => {
+  const send = useSend(res);
+  try {
+    if (!req.params) throw new Error('Something went wrong');
+    const resetToken = req.params.resetToken as string;
+    if (!resetToken) throw new Error('No reset token. Access denied');
+
+    const user = await User.findOne({ resetToken });
+    if (!user) throw new Error('No users with this token');
+    const { resetTokenExp } = user;
+    if (resetTokenExp && Date.now() > new Date(resetTokenExp).getTime()) {
+      return send(400, 'Your reset token has expired');
+    }
+    return send(200, 'Access approved', { isAccessed: true });
+  } catch (err: any) {
+    send(500, err.message);
     console.log(err);
   }
 });
