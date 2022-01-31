@@ -121,7 +121,7 @@ router.get('/payment/sub', async (req: MyRequest, res: MyResponse) => {
     }
 
     return send(200, 'Subscriptions have been got', { subscriptions: products, userSubscriptions: [] });
-  } catch (e) {
+  } catch (e: any) {
     console.log(e.message);
     send(500, e.message, { success: false });
   }
@@ -160,7 +160,7 @@ router.post('/payment/sub', async (req: MyRequest, res: MyResponse) => {
       });
     }
 
-  } catch (e) {
+  } catch (e: any) {
     console.log(e.message);
     send(500, e.message, { success: false });
   }

@@ -36,7 +36,7 @@ router.get('/', async (req: MyRequest, res: MyResponse) => {
           return acc;
         }, []);
         
-        return send(200, 'Your quizzes loaded successully', { quizzes });
+        return send(200, 'Your quizzes loaded successfully', { quizzes });
       }
     } else {
       return send(400, 'User isn\'t authenticated');

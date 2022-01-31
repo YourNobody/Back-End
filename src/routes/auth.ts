@@ -16,7 +16,7 @@ router.post(routes.AUTH.LOGIN, async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
     if (!req.body) {
-      throw new Error('Somerthing went wrong!');
+      throw new Error('Something went wrong!');
     }
     const {email, password} = req.body;
     const candidate = await User.findOne({ email }, 'email _id nickname password');
@@ -66,12 +66,12 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
   const send = useSend(res);
   try {
     if (!req.body) {
-      throw new Error('Somerthing went wrong!');
+      throw new Error('Something went wrong!');
     }
     const {email, password, confirm, nickname} = req.body;
     
     if (password !== confirm) {
-      send(400, 'Paaswords don\'t match');
+      send(400, 'Passwords don\'t match');
     }
 
     const candidateByEmail = await User.findOne({ email });
@@ -83,19 +83,15 @@ router.post(routes.AUTH.REGISTER, async (req: MyRequest, res: MyResponse) => {
     if (candidateByEmail) {
       return send(400, 'User with such the email already exists');
     } else {
-      if (password !== confirm) {
-        return send(400, 'Confirmation failed');
-      }
       const hashedPassword = getHashedPassword(password, 10);
       const user = new User({
         email, nickname,
         password: hashedPassword,
-        quizes: []
       });
 
       await user.save();
 
-      return send(201, 'Registration has gone successully');
+      return send(201, 'Registration has gone successfully');
     }
   } catch (error: any) {
     send(500, error.message);

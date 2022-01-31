@@ -15,9 +15,9 @@ const QuizSchema = new Schema<IQuiz>({
   usersAnswers: [
     {
       answer: { type: String, required: true },
-      userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: false },
+      userId: { type: Schema.Types.ObjectId, ref: refs.USER, required: true },
       quizAnswerId: { type: Schema.Types.ObjectId, required: true },
-      createdAt: { type: Date, required: true, default: Date.now}
+      createdAt: { type: Date, required: true, default: Date.now }
     }
   ]
 },{
