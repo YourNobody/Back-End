@@ -1,20 +1,38 @@
 {
   "compilerOptions": {
-      "target": "es5",
-      "module": "commonJs",
-      "sourceMap": true,
-      "outDir": "./build",
-      "rootDir": "./src",
-      "strict": true,
-      "noImplicitAny": true,
-      "moduleResolution": "node",
-      "baseUrl": "./src",
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true,
-      "experimentalDecorators": true,
-      "emitDecoratorMetadata": true,
+    "target": "es6",
+    "module": "commonJs",
+    "sourceMap": true,
+    "outDir": "./build",
+    "rootDir": "./src",
+    "strict": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "baseUrl": "./",
+    "paths": {
+      "@Controllers": ["src/controllers/index.ts"],
+      "@Services": ["src/services/index.ts"],
+      "@Dtos": ["src/dtos/index.ts"],
+      "@Constants": ["src/constants/index.ts"],
+      "@Exceptions": ["src/exceptions/index.ts"],
+      "@Interfaces": ["src/interfaces/index.ts"],
+      "@Routers": ["src/routers/index.ts"],
+      "@Routers/*": ["src/routers/*"],
+      "@Models": ["src/models/index.ts"],
+      "@Models/*": ["src/models/*"],
+      "@Helpers": ["src/helpers/index.ts"],
+      "@Middlewares": ["src/middlewares/index.ts"],
+      "@ThirdParty/*": ["src/third-party/*"]
+    },
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
-
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -3,49 +3,42 @@ import path from 'path';
 dotenv.config({path: path.resolve(__dirname, '.env')});
 import express, { Application } from 'express';
 import mongoose from 'mongoose';
-import session from 'express-session';
-import MongoDBStore from 'connect-mongodb-session';
 import cors from 'cors';
 import hpp from 'hpp';
 import helmet from 'helmet';
-import { authRoutes, profileRoutes, quizesRoutes } from './routes/routes';
+import cookieParser from 'cookie-parser';
+import {CommonRouter, AuthRouter, ProfileRouter, QuizzesRouter} from "@Routers";
+import {errorMiddleware} from "@Middlewares";
+import {AssetsRouter} from "@Routers/Assets.router";
+
+const routes: Array<CommonRouter> = [];
 
 try {
   const MONGO_URI = <string>process.env.MONGODB_URI;
-  const SESSION_SECRET = <string>process.env.SESSION_SECRET;
   const app: Application = express();
-  const MongoDBStoreSessioned = MongoDBStore(session);
-
-  const store = new MongoDBStoreSessioned({
-    uri: MONGO_URI,
-    collection: 'sessions'
-  })
 
   app.use(helmet());
-  app.use(cors());
+  app.use(cookieParser());
+  app.use(cors({ credentials: true, origin: process.env.APP_BASE_URL }));
   app.use(hpp());
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true }));
 
-  app.use(session({
-    secret: SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store
-  }));
+  routes.push(new AuthRouter(app));
+  routes.push(new ProfileRouter(app));
+  routes.push(new QuizzesRouter(app));
+  routes.push(new AssetsRouter(app));
 
-  app.use('/auth', authRoutes);
-  app.use('/profile', profileRoutes);
-  app.use('/quizes', quizesRoutes);
+  // app.use(errorMiddleware);
 
   void async function() {
     try {
-      await mongoose.connect(MONGO_URI, {
-      })
+      await mongoose.connect(MONGO_URI);
       app.listen(process.env.PORT, () => {
         console.log('Server is running on port ' + process.env.PORT)
-      })
+      });
     } catch (error) {
-      console.error(error)
+      console.error(error);
     }
   }();
 } catch (error) {

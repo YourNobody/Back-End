@@ -59,3 +59,15 @@ export const getHashedPassword = (password: string, salt?: string | number): str
   if (!salt) salt = 10;
   return bcrypt.hashSync(password, salt);
 }
+
+export const getDataAccordingToKeys = (data: Record<string, unknown>, keys: string[]): any => {
+  if (!data && !keys) return null;
+  if (!keys.length) return data;
+
+  return keys.reduce((acc: any, key, index) => {
+    if (key in data) {
+      acc[key] = data[key];
+    }
+    return acc;
+  }, {});
+};
