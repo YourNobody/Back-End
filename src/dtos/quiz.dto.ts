@@ -163,7 +163,7 @@ export class QuizDto {
 						createdAt: answer?.createdAt
 					});
 					return acc;
-				}, {});
+				}, []);
 
 				break;
 			}
@@ -171,25 +171,17 @@ export class QuizDto {
 				const { variants, answers } = quiz;
 
 				stats = answers.reduce((acc: any, answer, index) => {
-					const variantOfAnswerIndex = variants!.findIndex(variant => variant._id!.toString() === answer.variantId!.toString());
-					const naming = variantOfAnswerIndex ? 'right' : 'left';
-
-					if (acc[naming]) {
-						acc[naming].count++;
+					const variantOfAnswer = variants!.find(variant => variant._id!.toString() === answer.variantId!.toString());
+					if (!variantOfAnswer) return acc;
+					const variantId = variantOfAnswer._id!.toString();
+					if (acc[variantId]) {
+						acc[variantId].count++;
 					} else {
-						acc[naming] = { count: 1 };
+						acc[variantId] = { count: 1 };
 					}
 
 					return acc;
 				}, {});
-
-				stats = Object.keys(stats).map(key => {
-					return {
-						//@ts-ignore
-						...stats[key],
-						answer: key
-					};
-				});
 
 				break;
 			}
