@@ -163,7 +163,7 @@ export class QuizDto {
 						createdAt: answer?.createdAt
 					});
 					return acc;
-				}, {});
+				}, []);
 
 				break;
 			}
