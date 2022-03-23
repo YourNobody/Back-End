@@ -71,3 +71,9 @@ export const getDataAccordingToKeys = (data: Record<string, unknown>, keys: stri
     return acc;
   }, {});
 };
+
+export const asString = (str: any): string => {
+  if (!str) throw new Error('No data');
+  if (str.hasOwnProperty('toString')) return str.toString() as string;
+  return str;
+};

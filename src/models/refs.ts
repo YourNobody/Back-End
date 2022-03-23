@@ -3,4 +3,5 @@ export const refs = {
   QUIZ: 'Quiz',
   IMAGE: 'Image',
   TOKEN: 'Token',
+  SUBSCRIPTION: 'Subscription',
 }

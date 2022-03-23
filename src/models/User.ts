@@ -16,7 +16,7 @@ const UserSchema = new Schema<IUser>({
   activationLink: { type: String, required: true },
   avatar: { type: String },
   passwordChanged: { type: Date, required: true, default: new Date },
-  subscription: { type: String, required: false }
+  subscriptionId: { type: String, required: false }
 }, {
   versionKey: false,
   toJSON: {

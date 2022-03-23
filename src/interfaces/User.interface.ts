@@ -14,6 +14,7 @@ export interface IUserCommon extends Document {
   activationLink: string;
   avatar: string;
   passwordChanged: Date;
+  subscriptionId: string;
   // subscriptions: {
   //   _id?: Schema.Types.ObjectId,
   //   sub: any;

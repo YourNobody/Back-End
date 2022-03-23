@@ -6,3 +6,4 @@ export * from './QuizService.interface';
 export * from './Quiz.interface';
 export * from './Token.interface';
 export * from './User.interface';
+export * from './Subscription.interface';

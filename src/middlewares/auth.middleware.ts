@@ -12,7 +12,6 @@ export function authMiddleware(req: MyRequest<any>, res: MyResponse, next: any) 
 
 		const userData = TokenService.validateAccessToken(accessToken);
 		if (!userData) return next(ApiError.UnauthorizedError());
-
 		req.user = userData;
 		next();
 	} catch (e) {

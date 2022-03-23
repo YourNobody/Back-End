@@ -10,6 +10,7 @@ import cookieParser from 'cookie-parser';
 import {CommonRouter, AuthRouter, ProfileRouter, QuizzesRouter} from "@Routers";
 import {errorMiddleware} from "@Middlewares";
 import {AssetsRouter} from "@Routers/Assets.router";
+import { SubscriptionsRouter } from '@Routers/Subscriptions.router';
 
 const routes: Array<CommonRouter> = [];
 
@@ -28,6 +29,7 @@ try {
   routes.push(new ProfileRouter(app));
   routes.push(new QuizzesRouter(app));
   routes.push(new AssetsRouter(app));
+  routes.push(new SubscriptionsRouter(app));
 
   // app.use(errorMiddleware);
 

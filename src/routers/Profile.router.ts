@@ -5,7 +5,7 @@ import {ProfileController, QuizController} from "@Controllers";
 
 export class ProfileRouter extends CommonRouter {
 	constructor(app: Application) {
-		super(app, 'AuthRoutes');
+		super(app, 'ProfileRoutes');
 	}
 
 	assignAllRouterTypes() {
@@ -17,14 +17,13 @@ export class ProfileRouter extends CommonRouter {
 		this.router.post('/change/email', ProfileController.changeEmail);
 		this.router.post('/change/password', ProfileController.changePassword);
 		this.router.post('/change/nickname', ProfileController.changeNickname);
-		this.router.post('/change/avatar', ProfileController.changeAvatar)
+		this.router.post('/change/avatar', ProfileController.changeAvatar);
 	}
 
 	assignGetRoutes() {
-		this.router.get('/subscriptions', ProfileController.getSubscriptions);
 		this.router.get('/quizzes', QuizController.getProfileQuizzes);
 		this.router.get('/account', ProfileController.getAccountInfo);
-		this.router.get('/statistics', QuizController.getQuizStatistics); // queries => quizId
+		this.router.get('/statistics', QuizController.getQuizStatistics);
 	}
 
 	configureRoutes(): Application {
