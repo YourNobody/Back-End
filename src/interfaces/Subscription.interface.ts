@@ -5,6 +5,7 @@ export interface ISubscription {
   userId: string;
   startedAt: Date;
   endAt: Date;
+  isExpired: boolean;
   level: string;
 }
 
@@ -17,6 +18,6 @@ export interface ICustomerDataForSubscription {
 }
 
 export interface ISubscriptionPaymentCustomerData extends ICustomerDataForSubscription {
-  email: string,
+  email: string;
   payment_method: string;
 }

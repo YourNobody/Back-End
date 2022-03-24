@@ -6,6 +6,7 @@ const SubscriptionSchema = new Schema<ISubscription>({
   subId: { type: String, required: true, unique: true },
   userId: { type: String, required: true, unique: true },
   level: { type: String, required: true },
+  isExpired: { type: Boolean, required: true, default: false },
   startedAt: { type: Date, required: true },
   endAt: { type: Date, required: true },
 });

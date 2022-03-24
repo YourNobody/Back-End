@@ -31,7 +31,7 @@ try {
   routes.push(new AssetsRouter(app));
   routes.push(new SubscriptionsRouter(app));
 
-  // app.use(errorMiddleware);
+  app.use(errorMiddleware);
 
   void async function() {
     try {

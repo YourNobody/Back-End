@@ -15,8 +15,7 @@ const UserSchema = new Schema<IUser>({
   isActivated: { type: Boolean, default: false },
   activationLink: { type: String, required: true },
   avatar: { type: String },
-  passwordChanged: { type: Date, required: true, default: new Date },
-  subscriptionId: { type: String, required: false }
+  passwordChanged: { type: Date, required: true, default: new Date }
 }, {
   versionKey: false,
   toJSON: {
@@ -29,8 +28,7 @@ const UserSchema = new Schema<IUser>({
 UserSchema.statics.build = (data: Omit<IRegisterBody, 'confirm'>) => {
   return new User({
     ...data,
-    quizzes: [],
-    subscriptions: []
+    quizzes: []
   });
 }
 
