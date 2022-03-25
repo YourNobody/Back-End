@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { asString } from '@Helpers';
-import { ICustomerDataForSubscription, ISubscription, WithStripePrice } from '@Interfaces'
+import {ICustomerDataForSubscription, ISubscription, IUserCommon, IUserDTO, WithStripePrice} from '@Interfaces';
 import { Subscription } from '@Models';
 
 export class SubscriptionService {
@@ -89,5 +89,19 @@ export class SubscriptionService {
     //   endedAt: ''
     //   subId: '',
     // }
+  }
+
+	static async confirmSubscription(subId: string, user: IUserCommon) {
+
+	}
+
+  static async checkUserForExistingSubs(user: IUserCommon, subId: string) {
+    const subs = await Subscription.find({email: user.email});
+
+    if (!subs.length) return null;
+
+
+
+    const existed = subs;
   }
 }

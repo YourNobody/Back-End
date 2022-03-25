@@ -43,8 +43,18 @@ export class SubscriptionsController {
     }
   }
 
-  static async confirmSubscription() {
+  static async confirmSubscription(req: MyRequest<{ id: string }>, res: MyResponse) {
+    const send = useSend(res);
+    try {
+      if (!req.body || !req.user) throw new Error('Something went wrong');
+      const { id } = req.body;
 
+      const data = await SubscriptionService.confirmSubscription(id, req.user);
+
+      send(201, 'Data: ', { data });
+    } catch (e: any) {
+      send(500, e.message);
+    }
   }
 
   static async checkForSubscription() {
