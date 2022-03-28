@@ -1,5 +1,5 @@
 import { useSend } from '@Helpers'
-import { ISubscriptionPaymentCustomerData, MyRequest, MyResponse } from '@Interfaces'
+import {ISubscriptionPaymentCustomerData, ISubscriptionSuccess, MyRequest, MyResponse} from '@Interfaces';
 import { SubscriptionService } from '../services/Subscription.service'
 
 export class SubscriptionsController {
@@ -32,26 +32,34 @@ export class SubscriptionsController {
   static async createSubscriptionWithPayment(req: MyRequest<ISubscriptionPaymentCustomerData>, res: MyResponse) {
     const send = useSend(res);
     try {
-      if (!req.body) throw new Error('Something went wrong');
-      const {email, payment_method, priceId} = req.body;
+      if (!req.body || !req.user) throw new Error('Something went wrong');
+      const {payment_method, priceId} = req.body;
+      const { email } = req.user;
 
-      const data = await SubscriptionService.createSubscriptionWithPayment({ priceId }, { email, payment_method });
+      const subscriptionData = await SubscriptionService.createSubscriptionWithPayment({
+        priceId
+      }, {
+        email, payment_method,
+        invoice_settings: {
+          default_payment_method: payment_method
+        }
+      });
 
-      send(201, 'Data: ', { data });
+      send(201, 'Data: ', { subscriptionData });
     } catch (e: any) {
       send(500, e.message);
     }
   }
 
-  static async confirmSubscription(req: MyRequest<{ id: string }>, res: MyResponse) {
+  static async confirmSubscription(req: MyRequest<{ subscriptionData: ISubscriptionSuccess }>, res: MyResponse) {
     const send = useSend(res);
     try {
       if (!req.body || !req.user) throw new Error('Something went wrong');
-      const { id } = req.body;
+      const { subscriptionData } = req.body;
 
-      const data = await SubscriptionService.confirmSubscription(id, req.user);
+      const sub = await SubscriptionService.confirmSubscription(subscriptionData, req.user);
 
-      send(201, 'Data: ', { data });
+      send(201, 'Successfully confirmed', { sub, confirmed: true });
     } catch (e: any) {
       send(500, e.message);
     }

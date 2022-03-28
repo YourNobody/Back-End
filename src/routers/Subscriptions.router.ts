@@ -14,7 +14,7 @@ export class SubscriptionsRouter extends CommonRouter {
   }
 
   assignPostRoutes() {
-    this.router.post('/', authMiddleware, SubscriptionsController.createSubscriptionWithPayment);
+    this.router.post('/subscribe', authMiddleware, SubscriptionsController.createSubscriptionWithPayment);
     this.router.post('/confirm', authMiddleware, SubscriptionsController.confirmSubscription);
     this.router.post('/check', authMiddleware, SubscriptionsController.checkForSubscription);
     this.router.post('/cancel', authMiddleware, SubscriptionsController.cancelSubscription);

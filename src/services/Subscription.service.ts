@@ -1,7 +1,15 @@
 import Stripe from 'stripe';
-import { asString } from '@Helpers';
-import {ICustomerDataForSubscription, ISubscription, IUserCommon, IUserDTO, WithStripePrice} from '@Interfaces';
-import { Subscription } from '@Models';
+import {asString, inMilliseconds} from '@Helpers';
+import {
+  ICustomerDataForSubscription,
+  ISubscription,
+  ISubscriptionSuccess,
+  IUserCommon,
+  IUserDTO,
+  WithStripePrice,
+} from '@Interfaces';
+import {Subscription, User} from '@Models';
+import {SubscriptionDto} from '../dtos/Subscription.dto';
 
 export class SubscriptionService {
   private static stripe: Stripe = new Stripe(asString(process.env.STRIPE_SECRET_KEY), { apiVersion: '2020-08-27' });
@@ -45,7 +53,7 @@ export class SubscriptionService {
     return products;
   }
 
-  static async getUserSubscriptions(userId: string) {
+  static async getUserSubscriptions(userId: any) {
     const subs = await SubscriptionService.getSubscriptions();
     const userSubs = await Subscription.find({ userId });
 
@@ -65,7 +73,7 @@ export class SubscriptionService {
   static async createSubscriptionWithPayment(
     customerData: ICustomerDataForSubscription,
     createCustomerConfig: Stripe.CustomerCreateParams
-  ): Promise<any | void> {
+  ): Promise<ISubscriptionSuccess> {
     if (!createCustomerConfig) throw new Error('No config for creating token');
 
     const customer = await SubscriptionService.stripe.customers.create(createCustomerConfig);
@@ -77,22 +85,61 @@ export class SubscriptionService {
       expand: ['latest_invoice.payment_intent']
     });
 
-    if (!subscription) throw new Error('Something went wrong with creating your subscription. Try later');
+    const subLI = subscription.latest_invoice as any;
 
-    return subscription;
-    // const clientSecret = (<any>subscription.latest_invoice).payment_intent?.client_secret;
-    //
-    // return {
-    //   clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
-    //   level: '',
-    //   createdAt: '',
-    //   endedAt: ''
-    //   subId: '',
-    // }
+    if (!subscription || subLI.status !== 'paid') throw new Error('Something went wrong with creating your subscription. Try later');
+
+    const clientSecret = subLI.payment_intent?.client_secret;
+    const now = Date.now();
+    const interval = subscription.items.data[0].price.recurring?.interval;
+
+    await SubscriptionService.getProducts();
+    const product = SubscriptionService.products.find(prod => prod.id === subscription.items.data[0].plan.product);
+    if (!product || !product.unit_label) throw new Error('Something went wrong with creating your subscription. Try later');
+
+    SubscriptionService.subs.push(subscription);
+
+    return {
+      clientSecret: clientSecret,
+      level: product.unit_label,
+      createdAt: now,
+      endAt: now + inMilliseconds(interval || 'week'),
+      subId: subscription.id,
+      isExpired: false,
+      status: subLI.payment_intent.status,
+      productId: product.id
+    }
   }
 
-	static async confirmSubscription(subId: string, user: IUserCommon) {
+	static async confirmSubscription(subData: ISubscriptionSuccess, userPayload: IUserCommon) {
+    const user = await User.findById(userPayload.id);
+    if (!user) throw new Error('Something went wrong with the session');
 
+    await SubscriptionService.getSubscriptions();
+    await SubscriptionService.getProducts();
+
+    const newSub = SubscriptionService.subs.find(sub => sub.id === subData.subId);
+    if (!newSub) throw new Error('Something went wrong with subscription confirmation');
+
+    const existed = await Subscription.findOne({ productId: subData.productId, userId: userPayload.id });
+    if (!existed) {
+      const subDB = Subscription.build(subData, userPayload);
+      await subDB.save();
+      return SubscriptionDto.createSubscriptionDto(subData, userPayload);
+    }
+
+    if (!existed.isExpired) throw new Error('The subscription already exists and is active');
+
+    await SubscriptionService.stripe.subscriptions.del(existed.subId);
+
+    existed.isExpired = false;
+    existed.createdAt = new Date(subData.createdAt);
+    existed.endAt = new Date(subData.endAt);
+    existed.subId = subData.subId;
+
+    await existed.save();
+
+    return SubscriptionDto.createSubscriptionDto(subData, userPayload);
 	}
 
   static async checkUserForExistingSubs(user: IUserCommon, subId: string) {
