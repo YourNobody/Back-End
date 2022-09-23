@@ -1,17 +1,13 @@
 import { Request, Response } from 'express';
-import session, { SessionData } from 'express-session';
-import { IUser } from './User.interface';
-import { Document } from 'mongoose';
+import {IUser, IToken, IUserCommon} from '@Interfaces';
+import {Document, Schema} from 'mongoose';
+import {JwtPayload} from "jsonwebtoken";
 
-export interface MyRequest extends Request {
-  session: session.Session & Partial<SessionData> & MySession;
+export interface MyRequest<T> extends Request {
+  user?: IUserCommon & JwtPayload,
+  body: T
 }
 
 export interface MyResponse extends Response {
 
-}
-
-export interface MySession extends SessionData {
-  token?: string;
-  user?: (Document<any, any, IUser> & IUser) | null;
 }

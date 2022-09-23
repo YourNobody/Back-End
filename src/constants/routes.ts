@@ -9,7 +9,7 @@ export const routes = {
   PROFILE: {
     LOGOUT: '/logout'
   },
-  QUIZES: {
+  QUIZZES: {
     REMOVE: '/remove',
     CREATE: '/create',
     ROOT: '/quizes',

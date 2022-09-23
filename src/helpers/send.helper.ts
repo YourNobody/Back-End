@@ -1,10 +1,23 @@
-import { Response } from 'express';
+import {MyResponse} from "../interfaces/express.interface";
 
-export const useSend = (res: Response) => {
-  return (status: number, message?: string | Record<string, unknown>, params?: Record<string, unknown>): void => {
+export const useSend = (res: MyResponse) => {
+  return (status: number, message?: string | Record<string, unknown>, params?: Record<any, any>): void => {
     res.status(status).json({
       message,
       ...params
     });
   }
 };
+
+// export const useStaticSend = (res: MyResponse) => {
+//   const obj = new WeakMap() as any;
+//
+//   obj.add(res);
+//
+//   return (status: number, message?: string | Record<string, unknown>, params?: Record<any, any>): void => {
+//     res.status(status).json({
+//       message,
+//       ...params
+//     });
+//   }
+// };

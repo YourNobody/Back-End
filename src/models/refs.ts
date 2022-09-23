@@ -1,4 +1,7 @@
 export const refs = {
   USER: 'User',
-  Quiz: 'Quiz'
+  QUIZ: 'Quiz',
+  IMAGE: 'Image',
+  TOKEN: 'Token',
+  SUBSCRIPTION: 'Subscription',
 }
